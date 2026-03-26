@@ -1,0 +1,35 @@
+
+
+services:
+
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy   # waits for MySQL to actually be ready
+    restart: on-failure              # don't restart if it exits cleanly
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/placement_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_DATABASE: placement_db       # ✅ fixed (was "root")
+      MYSQL_ROOT_PASSWORD: password       # ✅ fixed (matches backend password)
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s              # gives MySQL time on very first boot
