@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:8080"
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"
 });
 
 API.interceptors.request.use((config) => {
@@ -14,44 +14,21 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+export const loginUser = (data) => API.post("/auth/login", data);
+export const registerUser = (data) => API.post("/auth/register", data);
+export const getCurrentUser = () => API.get("/auth/me");
 
-// ✅ LOGIN
-export const loginUser = (data) =>
-  API.post("/auth/login", data);
 
-// ✅ REGISTER (AUTH)
-export const registerUser = (data) =>
-  API.post("/auth/register", data);
+export const createStudentProfile = (data) => API.post("/students/profile", data);
+export const createCompanyProfile = (data) => API.post("/companies/profile", data);
+export const getStudentProfile = () => API.get("/students/me");
+export const getCompanyProfile = () => API.get("/companies/me");
 
-// ✅ CURRENT USER
-export const getCurrentUser = () =>
-  API.get("/auth/me");
-
-// ✅ STUDENT PROFILE
-export const createStudentProfile = (data) =>
-  API.post("/students/profile", data);
-
-// ✅ COMPANY PROFILE
-export const createCompanyProfile = (data) =>
-  API.post("/companies/profile", data);
-export default API;
-
-export const getStudentProfile = () =>
-  API.get("/students/me");
-
-export const getCompanyProfile = () =>
-  API.get("/companies/me");
-
-  export const createJob = (data) =>
-  API.post("/jobs/post", data);
-
-  export const getApplicationsByJob = (jobId) => {
-    return API.get(`/applications/job/${jobId}`);
-  };
-
+export const createJob = (data) => API.post("/jobs/post", data);
+export const getApplicationsByJob = (jobId) => API.get(`/applications/job/${jobId}`);
 
 export const getAllJobs = () => {
-  return axios.get("/jobs/All");
+  return API.get("/jobs/All");
 };
 
-
+export default API;
