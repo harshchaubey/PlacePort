@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApplicationController {
     private final ApplicationService applicationService;
-
+    private final CloudinaryService cloudinaryService;
     @PostMapping("/apply/{jobId}")
     public ApplicationResponseDTO applyForJob(@PathVariable Long jobId,@RequestParam("resume") MultipartFile resume) {
         return applicationService.applyForJob(jobId , resume);
