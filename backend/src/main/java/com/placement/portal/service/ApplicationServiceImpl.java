@@ -19,7 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.placement.portal.service.CloudinaryService; 
 import org.springframework.web.bind.annotation.*;
-
+import java.util.Map;                  
+import com.cloudinary.utils.ObjectUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,22 +53,13 @@ public class ApplicationServiceImpl implements ApplicationService {
          if(resume == null || resume.isEmpty()){
               throw new BadRequestException("Please upload a resume file");
          }
-
-String resumeUrl;
-    try {
-        Map uploadResult = cloudinary.uploader().upload(resume.getBytes(), 
-                ObjectUtils.asMap(
-                    "resource_type", "auto", 
-                    "folder", "placement_portal/resumes",
-                    "public_id", student.getId() + "_" + System.currentTimeMillis() // Optional: naming the file
-                ));
-        
-        // Get the secure HTTPS link
-        resumeUrl = (String) uploadResult.get("secure_url");
-        
-    } catch (IOException e) {
-        throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
-    }
+  String resumeUrl;
+try {
+ 
+    resumeUrl = cloudinaryService.uploadFile(resume, "placement_portal/resumes");
+} catch (IOException e) {
+    throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
+}
 
         Application application = new Application();
         application.setStudent(student);
