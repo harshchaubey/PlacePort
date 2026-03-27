@@ -35,7 +35,8 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final JobRepository jobRepository;
     private final StudentRepository studentRepository;
     private final CompanyRepository companyRepository;
-
+    private final CloudinaryService cloudinaryService;
+    
     @Override
     public ApplicationResponseDTO applyForJob(Long jobId, MultipartFile resume) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
