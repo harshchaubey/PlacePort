@@ -50,25 +50,26 @@ public class ApplicationServiceImpl implements ApplicationService {
               throw new BadRequestException("Please upload a resume file");
          }
 
-        String fileName = System.currentTimeMillis() + "_" + resume.getOriginalFilename();
-
-        Path path = Paths.get("uploads/" + fileName);
-
-        try {
-            Files.createDirectories(path.getParent());
-            Files.write(path, resume.getBytes());
-        } catch (IOException e) {
-            throw new RuntimeException("File upload failed");
-        }
-
-        if (student.getCgpa() < job.getMinCgpa()) {
-            throw new ResourceNotFoundException("student Cgpa cannot be less than student's cgpa");
-        }
+String resumeUrl;
+    try {
+        Map uploadResult = cloudinary.uploader().upload(resume.getBytes(), 
+                ObjectUtils.asMap(
+                    "resource_type", "auto", 
+                    "folder", "placement_portal/resumes",
+                    "public_id", student.getId() + "_" + System.currentTimeMillis() // Optional: naming the file
+                ));
+        
+        // Get the secure HTTPS link
+        resumeUrl = (String) uploadResult.get("secure_url");
+        
+    } catch (IOException e) {
+        throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
+    }
 
         Application application = new Application();
         application.setStudent(student);
         application.setJob(job);
-        application.setResumePath(fileName);
+        application.setResumePath(resumeUrl);
         application.setStatus("APPLIED");
 
         Application saved = applicationRepository.save(application);
