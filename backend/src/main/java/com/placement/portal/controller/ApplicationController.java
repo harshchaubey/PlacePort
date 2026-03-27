@@ -9,8 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.placement.portal.service.CloudinaryService; 
-import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
