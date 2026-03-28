@@ -340,21 +340,23 @@ useEffect(() => {
                {app.status}
              </span>
 
-             {/* 📄 VIEW RESUME */}
-
-             <a
-
-               href={`http://localhost:8080/uploads/${app.resumePath}`}
-               target="_blank"
-               rel="noreferrer"
-               style={{
-                 color: "#4facfe",
-                 textDecoration: "none",
-                 fontWeight: "600"
-               }}
-             >
-               View Resume 📄
-             </a>
+           {/* 📄 VIEW RESUME */}
+<a
+  href={
+    app.resumePath?.startsWith("http") 
+      ? app.resumePath                                // Use Cloudinary link directly
+      : `https://placement-portal-full-production.up.railway.app/uploads/${app.resumePath}` // Use Railway Backend for old files
+  }
+  target="_blank"
+  rel="noreferrer"
+  style={{
+    color: "#4facfe",
+    textDecoration: "none",
+    fontWeight: "600"
+  }}
+>
+  View Resume 📄
+</a>
 
            </div>
          </div>
