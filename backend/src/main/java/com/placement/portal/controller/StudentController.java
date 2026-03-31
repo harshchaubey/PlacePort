@@ -9,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
@@ -18,10 +20,12 @@ import java.util.List;
 public class StudentController {
      private final StudentService studentService;
 
-     @PostMapping("/profile")
-     public StudentResponseDTO addStudent(@Valid @RequestBody StudentRequestDTO dto){
+     @PostMapping(value = "/profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+     public StudentResponseDTO addStudent(
+             @Valid @RequestPart("student") StudentRequestDTO dto,
+             @RequestPart(value = "resume", required = false) MultipartFile resume){
 
-         return studentService.addStudent(dto);
+         return studentService.addStudent(dto, resume);
      }
 
      @GetMapping
@@ -37,10 +41,12 @@ public class StudentController {
      }
 
      //update
-    @PutMapping("/{id}")
-    public StudentResponseDTO updateStudent(@PathVariable Long id,
-                                            @Valid @RequestBody StudentRequestDTO dto ){
-          return studentService.updateStudent(id,dto);
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public StudentResponseDTO updateStudent(
+            @PathVariable Long id,
+            @Valid @RequestPart("student") StudentRequestDTO dto,
+            @RequestPart(value = "resume", required = false) MultipartFile resume ){
+          return studentService.updateStudent(id, dto, resume);
     }
 
     @DeleteMapping("/{id}")

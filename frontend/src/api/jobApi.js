@@ -30,8 +30,8 @@ export const createJob = (data) =>
 
 
 
-  export const applyJob = async (jobId, formData) => {
-       return API.post(`/applications/apply/${jobId}`,formData);
+  export const applyJob = async (jobId) => {
+       return API.post(`/applications/apply/${jobId}`);
     };
 export const getCompanyJobs = () =>
     API.get(`/jobs/company`);

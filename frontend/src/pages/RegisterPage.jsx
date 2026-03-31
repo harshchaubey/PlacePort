@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { registerUser } from "../api/authApi";
-import { Mail, Lock, User, Briefcase, GraduationCap, ChevronDown } from "lucide-react";
+import { Mail, Lock, User, Briefcase, GraduationCap, ChevronDown, Eye, EyeOff } from "lucide-react";
 import "./landing.css";
 
 function RegisterPage() {
@@ -13,6 +13,8 @@ function RegisterPage() {
     password: "",
     role: ""
   });
+  
+  const [showPassword, setShowPassword] = useState(false);
   
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -30,9 +32,16 @@ function RegisterPage() {
         return;
     }
 
+    const emailRegex = /^[^\s@]+@gmail\.com$/i;
+    if (!emailRegex.test(form.email)) {
+        setError("Please enter a valid @gmail.com email address.");
+        return;
+    }
+
     try {
       setIsLoading(true);
       await registerUser(form);
+      localStorage.setItem("userEmail", form.email);
       navigate("/complete-profile", { state: { role: form.role } });
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Registration failed. Please try again.");
@@ -73,7 +82,7 @@ function RegisterPage() {
                 <input
                   type="email"
                   name="email"
-                  placeholder="name@university.edu"
+                  placeholder="name@gmail.com"
                   onChange={handleChange}
                   required
                 />
@@ -82,15 +91,21 @@ function RegisterPage() {
 
             <div className="auth-form-group">
               <label>Password</label>
-              <div className="auth-input-wrapper">
+              <div className="auth-input-wrapper" style={{ position: 'relative' }}>
                 <Lock size={18} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create a strong password"
                   onChange={handleChange}
                   required
                 />
+                <div 
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: '1rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </div>
               </div>
             </div>
 

@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  // Use environment variable if defined, otherwise fallback to the local Docker backend
-  baseURL:  "https://placement-portal-full-production.up.railway.app"
+  baseURL: import.meta.env.VITE_API_URL || "https://placement-portal-full-production.up.railway.app"
 });
 
 API.interceptors.request.use((config) => {
@@ -31,5 +30,8 @@ export const getApplicationsByJob = (jobId) => API.get(`/applications/job/${jobI
 export const getAllJobs = () => {
   return API.get("/jobs/All");
 };
+
+export const updateApplicationStatus = (applicationId, status) =>
+  API.patch(`/applications/${applicationId}/status`, { status });
 
 export default API;

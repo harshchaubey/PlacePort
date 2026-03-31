@@ -1,15 +1,12 @@
 package com.placement.portal.controller;
 
-import com.placement.portal.dto.ApplicationRequestDTO;
 import com.placement.portal.dto.ApplicationResponseDTO;
-import com.placement.portal.entity.Application;
+import com.placement.portal.dto.UpdateStatusDTO;
 import com.placement.portal.service.ApplicationService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import com.placement.portal.service.CloudinaryService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -18,11 +15,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ApplicationController {
     private final ApplicationService applicationService;
-    private final CloudinaryService cloudinaryService;
+
     @PostMapping("/apply/{jobId}")
-    public ApplicationResponseDTO applyForJob(@PathVariable Long jobId,@RequestParam("resume") MultipartFile resume) {
-        return applicationService.applyForJob(jobId , resume);
+    public ApplicationResponseDTO applyForJob(@PathVariable Long jobId) {
+        return applicationService.applyForJob(jobId);
     }
+
     @GetMapping("/job/{jobId}")
     public List<ApplicationResponseDTO> getApplicationsByJobId(@PathVariable Long jobId){
         return applicationService.getApplicationsByJob(jobId);
@@ -33,18 +31,17 @@ public class ApplicationController {
         return applicationService.getApplicationsByStudent(authentication);
     }
 
-   /* @GetMapping("/company")
-    public List<ApplicationResponseDTO> getApplicationsByCompanyId(Authentication authentication){
-          return applicationService.getApplicationsByCompany(authentication);
-    }*/
-
-   // @GetMapping("/status/{applicationId}")
-   // public Application getApplicationStatus(@PathVariable Long applicationId ,
-    //                                        @RequestParam String status){
-    //    return applicationService.updateStatus(applicationId,status);
-    //}
     @GetMapping("/my")
     public List<ApplicationResponseDTO> getMyApplications(Authentication authentication){
         return applicationService.getApplicationByEmail(authentication.getName());
+    }
+
+    /** Company updates the status of an application */
+    @PatchMapping("/{applicationId}/status")
+    public ResponseEntity<ApplicationResponseDTO> updateStatus(
+            @PathVariable Long applicationId,
+            @RequestBody UpdateStatusDTO body) {
+        ApplicationResponseDTO updated = applicationService.updateStatus(applicationId, body.getStatus());
+        return ResponseEntity.ok(updated);
     }
 }

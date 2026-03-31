@@ -5,6 +5,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class StudentRequestDTO {
@@ -13,8 +14,7 @@ public class StudentRequestDTO {
        @NotBlank(message = "Name is required")
         private String name;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
+  
         private String email;
 
     @NotBlank(message = "Roll number is required")
@@ -31,6 +31,7 @@ public class StudentRequestDTO {
     @Max(value = 4, message = "Year must be <= 4")
         private int year;
 
+    private List<String> skills;
 
     }
 

@@ -8,7 +8,8 @@ import com.placement.portal.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import java.net.Authenticator;
 import java.util.List;
 
@@ -17,9 +18,10 @@ import java.util.List;
 public class StudentServiceImpl implements StudentService{
 
     private final StudentRepository studentRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Override
-    public StudentResponseDTO addStudent(StudentRequestDTO dto){
+    public StudentResponseDTO addStudent(StudentRequestDTO dto, MultipartFile resume){
 
         Student student = new Student();
         student.setName(dto.getName());
@@ -28,6 +30,18 @@ public class StudentServiceImpl implements StudentService{
         student.setBranch(dto.getBranch());
         student.setCgpa(dto.getCgpa());
         student.setYear(dto.getYear());
+        if (dto.getSkills() != null) {
+            student.setSkills(dto.getSkills());
+        }
+
+        if (resume != null && !resume.isEmpty()) {
+            try {
+                String resumeUrl = cloudinaryService.uploadFile(resume, "placement_portal/resumes");
+                student.setResumePath(resumeUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to upload resume to Cloudinary: " + e.getMessage());
+            }
+        }
 
         Student saved = studentRepository.save(student);
         return mapToResponse(saved);
@@ -52,7 +66,7 @@ public class StudentServiceImpl implements StudentService{
     }
 
     @Override
-    public StudentResponseDTO updateStudent(Long id, StudentRequestDTO dto){
+    public StudentResponseDTO updateStudent(Long id, StudentRequestDTO dto, MultipartFile resume){
           Student student = studentRepository.findById(id)
                           .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
 
@@ -62,6 +76,18 @@ public class StudentServiceImpl implements StudentService{
           student.setBranch(dto.getBranch());
           student.setCgpa(dto.getCgpa());
           student.setYear(dto.getYear());
+          if (dto.getSkills() != null) {
+              student.setSkills(dto.getSkills());
+          }
+
+          if (resume != null && !resume.isEmpty()) {
+              try {
+                  String resumeUrl = cloudinaryService.uploadFile(resume, "placement_portal/resumes");
+                  student.setResumePath(resumeUrl);
+              } catch (Exception e) {
+                  throw new RuntimeException("Failed to upload resume to Cloudinary: " + e.getMessage());
+              }
+          }
 
           Student updatedStudent =  studentRepository.save(student);
           return mapToResponse(updatedStudent);
@@ -90,7 +116,9 @@ public class StudentServiceImpl implements StudentService{
                 student.getRollNo(),
                 student.getBranch(),
                 student.getCgpa(),
-                student.getYear()
+                student.getYear(),
+                student.getSkills(),
+                student.getResumePath()
         );
     }
 }

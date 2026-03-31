@@ -1,31 +1,19 @@
 package com.placement.portal.service;
 
-import com.placement.portal.dto.ApplicationRequestDTO;
 import com.placement.portal.dto.ApplicationResponseDTO;
 import com.placement.portal.entity.Application;
-import com.placement.portal.entity.Company;
 import com.placement.portal.entity.Job;
 import com.placement.portal.entity.Student;
 import com.placement.portal.exception.BadRequestException;
 import com.placement.portal.exception.ResourceNotFoundException;
 import com.placement.portal.repository.ApplicationRepository;
-import com.placement.portal.repository.CompanyRepository;
 import com.placement.portal.repository.JobRepository;
 import com.placement.portal.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import com.placement.portal.service.CloudinaryService; 
-import org.springframework.web.bind.annotation.*;
-import java.util.Map;                  
-import com.cloudinary.utils.ObjectUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @Service
@@ -35,11 +23,10 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
     private final StudentRepository studentRepository;
-    private final CompanyRepository companyRepository;
-    private final CloudinaryService cloudinaryService;
-    
+
+
     @Override
-    public ApplicationResponseDTO applyForJob(Long jobId, MultipartFile resume) {
+    public ApplicationResponseDTO applyForJob(Long jobId) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
          Student student = studentRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Student not found with email: " + email));
@@ -50,16 +37,11 @@ public class ApplicationServiceImpl implements ApplicationService {
          if(applicationRepository.existsByStudentIdAndJobId(studentId, jobId)){
              throw new ResourceNotFoundException("You have already applied for this job");
          }
-         if(resume == null || resume.isEmpty()){
-              throw new BadRequestException("Please upload a resume file");
+         
+         String resumeUrl = student.getResumePath();
+         if (resumeUrl == null || resumeUrl.isEmpty()) {
+             throw new BadRequestException("Please upload a resume in your profile before applying");
          }
-  String resumeUrl;
-try {
- 
-    resumeUrl = cloudinaryService.uploadFile(resume, "placement_portal/resumes");
-} catch (IOException e) {
-    throw new RuntimeException("Cloudinary upload failed: " + e.getMessage());
-}
 
         Application application = new Application();
         application.setStudent(student);
@@ -110,6 +92,15 @@ try {
      }*/
 
 
+
+    @Override
+    public ApplicationResponseDTO updateStatus(Long applicationId, String status) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
+        application.setStatus(status.toUpperCase());
+        Application saved = applicationRepository.save(application);
+        return mapToResponse(saved);
+    }
 
     private ApplicationResponseDTO mapToResponse(Application application){
           return new ApplicationResponseDTO(

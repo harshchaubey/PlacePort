@@ -2,35 +2,53 @@
 
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getAllJobs } from "../api/jobApi"; 
-import { GraduationCap, MapPin, ArrowRight, ArrowLeft, Search, Bookmark } from "lucide-react";
+import { getAllJobs, applyJob, getAppliedJobs } from "../api/jobApi";
+import { GraduationCap, MapPin, ArrowRight, ArrowLeft, Search, Bookmark, CheckCircle } from "lucide-react";
 import "./landing.css";
 
 function JobsPage() {
   const [jobs, setJobs] = useState([]);
+  const [appliedJobs, setAppliedJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const keyword = params.get("keyword") || "";
   const locationParam = params.get("location") || "";
 
+  // Filter state — seeded from URL params passed by landing page search
+  const [filterType, setFilterType] = useState(params.get("type") || "");
+  const [filterCgpa, setFilterCgpa] = useState(params.get("cgpa") || "");
+  const [filterLoc, setFilterLoc] = useState("");
+
+  const getJobStatus = (jobId) => {
+    const app = applications.find(a => (a.jobId || a.job?.id) === jobId);
+    return app?.status || 'APPLIED';
+  };
+
   const handleApply = async (jobId) => {
     const token = localStorage.getItem("token");
 
-    // 🔥 NOT LOGGED IN
+    // NOT LOGGED IN → redirect to login
     if (!token) {
-      alert("🔒 Please login or register first to apply for this position!");
+      alert("🔒 Please login first to apply for this position!");
       navigate(`/login?redirect=/jobs&applyJobId=${jobId}`);
       return;
     }
 
-    // ✅ LOGGED IN
+    if (appliedJobs.includes(jobId)) {
+      alert("You have already applied for this job.");
+      return;
+    }
+
+    // LOGGED IN → call real API
     try {
-      // NOTE: backend apply API not yet implemented per user instruction
-      // await applyToJob(jobId);
-      alert("Applied successfully ✅ (Mocked)");
+      await applyJob(jobId);
+      setAppliedJobs(prev => [...prev, jobId]);
+      alert("Applied successfully ✅");
     } catch (err) {
-      alert("Already applied ❌");
+      const msg = err?.response?.data?.message || err?.message || "Failed to apply.";
+      alert(`Error: ${msg}`);
     }
   };
 
@@ -50,42 +68,45 @@ function JobsPage() {
     }
   }, [location.search]);
 
+  // Load already-applied jobs on mount (if logged in)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      getAppliedJobs()
+        .then(res => {
+          const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
+          setApplications(data);
+          setAppliedJobs(data.map(app => app.jobId || app.job?.id));
+        })
+        .catch(() => {}); // silently fail if not student
+    }
+  }, []);
+
   useEffect(() => {
     getAllJobs().then((res) => {
       const data = Array.isArray(res.data)
         ? res.data
         : res.data.data || res.data.jobs || [];
-
-      // Render the newest jobs first
       setJobs([...data].reverse());
     });
   }, []);
 
   const search = (keyword || "").toLowerCase().trim();
-  const locSearch = (locationParam || "").toLowerCase().trim();
+  const locSearch = (locationParam || filterLoc || "").toLowerCase().trim();
 
   const filteredJobs = jobs.filter((job) => {
     const title = (job.title || "").toLowerCase();
     const desc = (job.description || "").toLowerCase();
     const loc = (job.location || job.companyLocation || job.companyName || "").toLowerCase();
+    const type = (job.jobType || "").toLowerCase();
+    const cgpa = parseFloat(job.minCgpa) || 0;
 
-    // ✅ separate conditions
-    if (search && locSearch) {
-      return (
-        (title.includes(search) || desc.includes(search)) &&
-        loc.includes(locSearch)
-      );
-    }
+    if (search && !(title.includes(search) || desc.includes(search))) return false;
+    if (locSearch && !loc.includes(locSearch)) return false;
+    if (filterType && type !== filterType.toLowerCase()) return false;
+    if (filterCgpa && cgpa > parseFloat(filterCgpa)) return false;
 
-    if (search) {
-      return title.includes(search) || desc.includes(search);
-    }
-
-    if (locSearch) {
-      return loc.includes(locSearch);
-    }
-
-    return true; // show all if nothing typed
+    return true;
   });
 
   return (
@@ -120,7 +141,47 @@ function JobsPage() {
           </p>
         </div>
 
-        {/* ❌ NO JOBS */}
+        {/* 🔽 FILTER BAR */}
+        <div style={{ padding: "0 5rem 2rem", display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select
+            value={filterType}
+            onChange={e => setFilterType(e.target.value)}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', padding: '0.6rem 1rem', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="">All Job Types</option>
+            <option value="Full-time">Full-time</option>
+            <option value="Internship">Internship</option>
+            <option value="Part-time">Part-time</option>
+          </select>
+
+          <select
+            value={filterCgpa}
+            onChange={e => setFilterCgpa(e.target.value)}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', padding: '0.6rem 1rem', borderRadius: '10px', fontSize: '0.9rem', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="">Any CGPA</option>
+            <option value="6">Up to 6.0</option>
+            <option value="7">Up to 7.0</option>
+            <option value="8">Up to 8.0</option>
+            <option value="9">Up to 9.0</option>
+          </select>
+
+          <input
+            placeholder="Filter by location..."
+            value={filterLoc}
+            onChange={e => setFilterLoc(e.target.value)}
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: 'white', padding: '0.6rem 1rem', borderRadius: '10px', fontSize: '0.9rem', outline: 'none' }}
+          />
+
+          {(filterType || filterCgpa || filterLoc) && (
+            <button
+              onClick={() => { setFilterType(""); setFilterCgpa(""); setFilterLoc(""); }}
+              style={{ background: 'rgba(255,77,77,0.15)', border: '1px solid rgba(255,77,77,0.3)', color: '#ff6b6b', padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', fontSize: '0.9rem' }}
+            >
+              ✕ Clear Filters
+            </button>
+          )}
+        </div>
         {filteredJobs.length === 0 ? (
           <div style={{ textAlign: "center", padding: "5rem", color: "var(--text-muted)", background: "var(--glass-bg)", margin: "0 5rem", borderRadius: "20px", border: "1px solid var(--glass-border)", backdropFilter: "blur(12px)" }}>
             <Search size={48} style={{ opacity: 0.5, marginBottom: "1rem" }} />
@@ -159,17 +220,31 @@ function JobsPage() {
                   <span className="job-company">{job.company?.name || job.companyName || "Premium Partner"}</span>
                   <div className="job-location">
                     <MapPin size={14} />
-                    {job.location || "Remote / Hybrid"}
+                    {job.companyLocation || job.location || "Remote / Hybrid"}
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: "1rem" }}>
                   <button 
                     className="btn-apply" 
-                    style={{ flex: 1, background: "linear-gradient(135deg, var(--primary), var(--secondary))", borderColor: "transparent", color: "white" }}
+                    style={{ 
+                      flex: 1, 
+                      background: appliedJobs.includes(job.id) 
+                        ? "linear-gradient(135deg, #00e676, #00b248)" 
+                        : "linear-gradient(135deg, var(--primary), var(--secondary))", 
+                      borderColor: "transparent", color: "white"
+                    }}
                     onClick={() => handleApply(job.id)}
+                    disabled={appliedJobs.includes(job.id)}
                   >
-                    Apply Now <ArrowRight size={16} style={{marginLeft: "5px", verticalAlign: "sub"}}/>
+                    {appliedJobs.includes(job.id) 
+                      ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                          <CheckCircle size={16}/>
+                          {getJobStatus(job.id) === 'APPLIED' ? 'Applied' : getJobStatus(job.id)}
+                        </div>
+                      )
+                      : <>Apply Now <ArrowRight size={16} style={{marginLeft: "5px", verticalAlign: "sub"}}/></>}
                   </button>
                   <button 
                     className="btn-apply"

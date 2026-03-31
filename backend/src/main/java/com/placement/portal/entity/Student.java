@@ -2,6 +2,7 @@ package com.placement.portal.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -22,5 +23,8 @@ public class Student {
     private double cgpa;
     private int year;
 
+    @ElementCollection
+    private List<String> skills;
+    private String resumePath;
 
 }

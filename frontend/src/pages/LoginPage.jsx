@@ -45,6 +45,7 @@ function LoginPage() {
       if (!token) throw new Error("Token not received.");
 
       saveToken(token);
+      localStorage.setItem("userEmail", email.trim());
 
       const userRes = await getCurrentUser();
       const role = userRes?.data?.role;
@@ -54,14 +55,11 @@ function LoginPage() {
       const applyJobId = searchParams.get("applyJobId");
 
       if (redirectPath) {
-        // Forward back to jobs page and preserve applyJobId so it auto-applies
         navigate(`${redirectPath}${applyJobId ? `?applyJobId=${applyJobId}` : ''}`);
       } else if (role === "ADMIN") {
         navigate("/admin");
-      } else if (role === "COMPANY") {
-        navigate("/company");
       } else {
-        navigate("/student");
+        navigate("/");
       }
     } catch (err) {
       console.error("Login error:", err);

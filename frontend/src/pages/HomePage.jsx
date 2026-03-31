@@ -1,7 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { getAllJobs } from "../api/jobApi";
-import { Search, MapPin, Briefcase, GraduationCap, TrendingUp, Users, ArrowRight, CheckCircle, Flame, Code, Database, LineChart, Megaphone, PenTool, Shield } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { getAllJobs, applyJob, getAppliedJobs } from "../api/jobApi";
+import { getCurrentUser } from "../api/authApi";
+import { logout, getToken } from "../auth/auth";
+import { Search, MapPin, Briefcase, GraduationCap, TrendingUp, Users, ArrowRight, ArrowLeft, CheckCircle, Flame, Code, Database, LineChart, Megaphone, PenTool, Shield, ChevronDown, User, FileCheck, Settings, LogOut, LayoutDashboard, X } from "lucide-react";
 import "./landing.css";
 
 function HomePage() {
@@ -11,9 +13,99 @@ function HomePage() {
   const [suggestions, setSuggestions] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef(null);
+  const searchRef = useRef(null);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [appliedJobs, setAppliedJobs] = useState([]); // Array of IDs for quick lookups
+  const [applications, setApplications] = useState([]); // Full application objects
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [isLocFocused, setIsLocFocused] = useState(false);
+
+  // Fetch logged-in user on mount
+  useEffect(() => {
+    if (getToken()) {
+      getCurrentUser()
+        .then(res => {
+          setCurrentUser(res.data);
+          setUserRole(res.data?.role);
+        })
+        .catch(() => {
+          setCurrentUser(null);
+          setUserRole(null);
+        });
+    }
+  }, []);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setIsFocused(false);
+        setSuggestions([]);
+        setIsLocFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setCurrentUser(null);
+    setUserRole(null);
+    setShowProfileMenu(false);
+  };
+
+  // Load already-applied jobs on mount
+  useEffect(() => {
+    if (getToken()) {
+      getAppliedJobs()
+        .then(res => {
+          const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
+          setApplications(data);
+          setAppliedJobs(data.map(app => app.jobId || app.job?.id));
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  const handleApplyFromLanding = async (jobId) => {
+    if (!getToken()) {
+      navigate(`/login?redirect=/&applyJobId=${jobId}`);
+      return;
+    }
+    if (appliedJobs.includes(jobId)) return;
+    try {
+      setApplyLoading(true);
+      const res = await applyJob(jobId);
+      // Backend applyJob usually returns the new application object
+      if (res.data) {
+        setApplications(prev => [...prev, res.data]);
+        setAppliedJobs(prev => [...prev, jobId]);
+      } else {
+        // Fallback if data is not returned
+        setAppliedJobs(prev => [...prev, jobId]);
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message || "Failed to apply.");
+    } finally {
+      setApplyLoading(false);
+    }
+  };
 
   const handleSearch = () => {
-    navigate(`/jobs?keyword=${keyword.trim()}&location=${location.trim()}`);
+    const params = new URLSearchParams();
+    if (keyword.trim())  params.set('keyword', keyword.trim());
+    if (location.trim()) params.set('location', location.trim());
+    setSuggestions([]);
+    setIsFocused(false);
+    navigate(`/jobs?${params.toString()}`);
   };
 
   useEffect(() => {
@@ -36,7 +128,16 @@ function HomePage() {
     setSuggestions(filteredJobs.slice(0, 4));
   }, [keyword, jobs]);
 
-  const latestJobs = [...jobs].reverse().slice(0, 3); // Get 3 latest jobs
+  const latestJobs = [...jobs].reverse().slice(0, 3);
+
+  const POPULAR_CITIES = [
+    "Remote", "Bangalore", "Mumbai", "Delhi", "Hyderabad",
+    "Chennai", "Pune", "Kolkata", "Noida", "Gurugram", "Ahmedabad"
+  ];
+
+  const filteredCities = location.trim()
+    ? POPULAR_CITIES.filter(c => c.toLowerCase().includes(location.toLowerCase()))
+    : POPULAR_CITIES;
 
   const categories = [
     { name: "Software Engineer", icon: <Code size={24} />, count: "120+ Jobs" },
@@ -60,59 +161,240 @@ function HomePage() {
             PlacePort
           </div>
           <div className="nav-buttons">
-            <button className="btn-login" onClick={() => navigate("/login")}>
-              Log in
-            </button>
-            <button className="btn-gradient" onClick={() => navigate("/register")}>
-              Sign Up Free
-            </button>
+            {currentUser ? (
+              // 🔵 LOGGED-IN: Profile Avatar Dropdown
+              <div ref={profileMenuRef} style={{ position: 'relative' }}>
+                <div
+                  onClick={() => setShowProfileMenu(prev => !prev)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: 'rgba(255,255,255,0.05)', padding: '8px 16px',
+                    borderRadius: '30px', border: '1px solid rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(10px)', cursor: 'pointer', userSelect: 'none'
+                  }}
+                >
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #8a2be2, #ff0080)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 'bold', fontSize: '1rem', color: 'white'
+                  }}>
+                    {currentUser?.email?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'white' }}>
+                    {currentUser?.email?.split('@')[0]}
+                  </span>
+                  <ChevronDown size={16} color="var(--text-muted)" style={{ transition: 'transform 0.2s', transform: showProfileMenu ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                </div>
+
+                {showProfileMenu && (
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+                    background: 'rgba(10, 10, 20, 0.96)', border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '16px', padding: '8px', minWidth: '210px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)',
+                    zIndex: 1000, animation: 'navDropdown 0.15s ease-out'
+                  }}>
+                    {/* Email header */}
+                    <div style={{ padding: '10px 14px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', marginBottom: '6px' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Signed in as</div>
+                      <div style={{ fontWeight: '600', fontSize: '0.9rem', marginTop: '2px', color: 'white' }}>{currentUser?.email}</div>
+                      <div style={{ fontSize: '0.75rem', color: userRole === 'STUDENT' ? '#4facfe' : '#ff0080', marginTop: '3px' }}>{userRole}</div>
+                    </div>
+
+                    {/* Dashboard link */}
+                    <div
+                      onClick={() => { navigate(userRole === 'COMPANY' ? '/company' : '/student'); setShowProfileMenu(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', color: 'white', fontSize: '0.9rem' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(138,43,226,0.15)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <LayoutDashboard size={15} style={{ color: '#c98cff' }} /> Dashboard
+                    </div>
+
+                    {userRole === 'STUDENT' && (
+                      <>
+                        <div
+                          onClick={() => { navigate('/student?tab=Profile'); setShowProfileMenu(false); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', color: 'white', fontSize: '0.9rem' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,172,254,0.12)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <User size={15} style={{ color: '#4facfe' }} /> My Profile
+                        </div>
+                        <div
+                          onClick={() => { navigate('/student?tab=Applications'); setShowProfileMenu(false); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', color: 'white', fontSize: '0.9rem' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,172,254,0.12)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <FileCheck size={15} style={{ color: '#4facfe' }} /> Applications
+                        </div>
+                      </>
+                    )}
+
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', marginTop: '6px', paddingTop: '6px' }}>
+                      <div
+                        onClick={handleLogout}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', color: '#ff6b6b', fontSize: '0.9rem' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <LogOut size={15} /> Logout
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // 🔴 GUEST: Login / Sign Up buttons
+              <>
+                <button className="btn-login" onClick={() => navigate("/login")}>Log in</button>
+                <button className="btn-gradient" onClick={() => navigate("/register")}>Sign Up Free</button>
+              </>
+            )}
           </div>
         </nav>
 
-        {/* 🔍 TOP SEARCH BAR */}
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '2rem auto 0', padding: '0 2rem', position: 'relative', zIndex: 10, maxWidth: '800px' }}>
-          <div className="floating-search" style={{ marginTop: '0', width: '100%' }}>
-            <div className="search-input-group">
-              <Search size={20} />
+        {/* 🔍 NAUKRI-STYLE SEARCH BAR */}
+        <div ref={searchRef} style={{ display: 'flex', justifyContent: 'center', margin: '2rem auto 0', padding: '0 2rem', position: 'relative', zIndex: 100, maxWidth: '860px', width: '100%' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', width: '100%',
+            background: 'white', borderRadius: '12px',
+            boxShadow: isFocused ? '0 8px 40px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.25)',
+            overflow: 'visible', position: 'relative', transition: 'box-shadow 0.2s'
+          }}>
+
+            {/* Keyword input */}
+            <div style={{ flex: 2, display: 'flex', alignItems: 'center', padding: '0 1rem', borderRight: '1px solid #e0e0e0', position: 'relative' }}>
+              <Search size={18} style={{ color: '#888', flexShrink: 0, marginRight: '8px' }} />
               <input
                 type="text"
-                placeholder="Job title, keyword, or company"
+                placeholder="Skills, designations, companies"
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={e => { setKeyword(e.target.value); setIsFocused(true); }}
                 onFocus={() => setIsFocused(true)}
-                onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                style={{
+                  border: 'none', outline: 'none', background: 'transparent',
+                  fontSize: '0.95rem', color: '#222', width: '100%', padding: '0.85rem 0',
+                  fontFamily: 'inherit'
+                }}
               />
-              
-              {/* Suggestions Dropdown */}
+              {keyword && (
+                <X size={16} style={{ color: '#aaa', cursor: 'pointer', flexShrink: 0 }}
+                  onMouseDown={() => { setKeyword(''); setSuggestions([]); }}
+                />
+              )}
+
+              {/* Autocomplete dropdown */}
               {isFocused && suggestions.length > 0 && (
-                <div className="suggestions-dropdown">
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  background: 'white', border: '1px solid #e8e8e8',
+                  borderTop: 'none', borderRadius: '0 0 10px 10px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden'
+                }}>
                   {suggestions.map((job) => (
                     <div
-                      key={job.id || job._id || job.title}
-                      className="suggestion-item"
-                      onMouseDown={() => {
-                        setKeyword(job.title);
-                        setSuggestions([]);
+                      key={job.id || job.title}
+                      onMouseDown={() => { setKeyword(job.title); setSuggestions([]); setIsFocused(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '0.75rem 1rem', cursor: 'pointer', color: '#333',
+                        fontSize: '0.9rem', borderBottom: '1px solid #f5f5f5',
+                        transition: 'background 0.1s'
                       }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8f4ff'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
                     >
-                      {job.title}
+                      <Search size={14} style={{ color: '#999', flexShrink: 0 }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                        <div style={{ fontWeight: '600', color: '#222', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.title}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {job.companyName} { (job.companyLocation || job.location) && ` • ${job.companyLocation || job.location}` }
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div
+                    onMouseDown={handleSearch}
+                    style={{ padding: '0.75rem 1rem', color: '#7c3aed', fontWeight: '600', fontSize: '0.88rem', cursor: 'pointer', background: '#faf5ff' }}
+                  >
+                    🔍 Search all jobs for "{keyword}"
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Location input with dropdown */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 1rem', position: 'relative' }}>
+              <MapPin size={18} style={{ color: '#888', flexShrink: 0, marginRight: '8px' }} />
+              <input
+                type="text"
+                placeholder="City or remote"
+                value={location}
+                onChange={e => { setLocation(e.target.value); setIsLocFocused(true); }}
+                onFocus={() => setIsLocFocused(true)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                style={{
+                  border: 'none', outline: 'none', background: 'transparent',
+                  fontSize: '0.95rem', color: '#222', width: '100%', padding: '0.85rem 0',
+                  fontFamily: 'inherit'
+                }}
+              />
+              {location && (
+                <X size={16} style={{ color: '#aaa', cursor: 'pointer', flexShrink: 0 }}
+                  onMouseDown={() => setLocation('')}
+                />
+              )}
+
+              {/* City suggestions dropdown */}
+              {isLocFocused && filteredCities.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  background: 'white', border: '1px solid #e8e8e8',
+                  borderTop: 'none', borderRadius: '0 0 10px 10px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden'
+                }}>
+                  {!location.trim() && (
+                    <div style={{ padding: '0.6rem 1rem', fontSize: '0.72rem', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+                      Popular Locations
+                    </div>
+                  )}
+                  {filteredCities.map(city => (
+                    <div
+                      key={city}
+                      onMouseDown={() => { setLocation(city); setIsLocFocused(false); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '0.7rem 1rem', cursor: 'pointer', color: '#333',
+                        fontSize: '0.9rem', borderBottom: '1px solid #f5f5f5'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8f4ff'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                    >
+                      <MapPin size={13} style={{ color: '#7c3aed' }} />
+                      {city}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            
-            <div className="search-input-group" style={{ borderLeft: '1px solid rgba(255,255,255,0.1)', borderRadius: '0', background: 'transparent' }}>
-              <MapPin size={20} />
-              <input
-                type="text"
-                placeholder="City, state, remote"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-            </div>
 
-            <button className="btn-search" onClick={handleSearch}>
+            {/* Search button */}
+            <button
+              onClick={handleSearch}
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed, #db2777)',
+                color: 'white', border: 'none', padding: '0 2rem',
+                fontSize: '1rem', fontWeight: '700', cursor: 'pointer',
+                borderRadius: '0 12px 12px 0', height: '52px', whiteSpace: 'nowrap',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
               Search
             </button>
           </div>
@@ -186,7 +468,7 @@ function HomePage() {
 
                   <button 
                     className="btn-apply" 
-                    onClick={() => navigate(`/jobs`)}
+                    onClick={() => setSelectedJob(job)}
                   >
                     View & Apply <ArrowRight size={16} style={{marginLeft: "5px", verticalAlign: "sub"}}/>
                   </button>
@@ -291,6 +573,102 @@ function HomePage() {
           </div>
         </section>
       </div>
+
+      {/* 🪟 JOB DETAIL MODAL */}
+      {selectedJob && (
+        <div
+          onClick={() => setSelectedJob(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(8px)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'rgba(12,12,25,0.98)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '24px', padding: '2.5rem', maxWidth: '560px', width: '100%',
+              boxShadow: '0 30px 70px rgba(0,0,0,0.6)', position: 'relative',
+              animation: 'navDropdown 0.2s ease-out'
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedJob(null)}
+              style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', background: 'rgba(255,255,255,0.07)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}
+            >
+              <X size={18} />
+            </button>
+
+            {/* Company + Type */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'linear-gradient(135deg, #8a2be2, #ff0080)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '1.3rem', color: 'white' }}>
+                {selectedJob.companyName?.charAt(0) || 'C'}
+              </div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '1.1rem', color: 'white' }}>{selectedJob.companyName || 'Company'}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedJob.companyLocation || selectedJob.location || 'Location N/A'}</div>
+              </div>
+              <span style={{ marginLeft: 'auto', background: 'rgba(138,43,226,0.2)', color: '#c98cff', padding: '0.3rem 0.9rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600', border: '1px solid rgba(138,43,226,0.3)' }}>
+                {selectedJob.jobType || 'Full-time'}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.6rem', fontWeight: '800', color: 'white' }}>{selectedJob.title}</h2>
+
+            {/* Key info chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', margin: '1rem 0 1.5rem' }}>
+              {selectedJob.salary && (
+                <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '5px 12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>💰 {selectedJob.salary}</span>
+              )}
+              <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '5px 12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>🎓 Min CGPA: {selectedJob.minCgpa || 'N/A'}</span>
+              {selectedJob.lastDate && (
+                <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '5px 12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>📅 Deadline: {selectedJob.lastDate}</span>
+              )}
+            </div>
+
+            {/* Description */}
+            {selectedJob.description && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>About the Role</div>
+                <p style={{ color: 'rgba(255,255,255,0.75)', lineHeight: '1.7', fontSize: '0.95rem', margin: 0 }}>{selectedJob.description}</p>
+              </div>
+            )}
+
+            {/* Apply Button */}
+            <button
+              disabled={appliedJobs.includes(selectedJob.id) || applyLoading}
+              onClick={() => handleApplyFromLanding(selectedJob.id)}
+              style={{
+                width: '100%', padding: '1rem', border: 'none', borderRadius: '14px', cursor: appliedJobs.includes(selectedJob.id) ? 'not-allowed' : 'pointer',
+                background: appliedJobs.includes(selectedJob.id)
+                  ? 'linear-gradient(135deg, #00e676, #00b248)'
+                  : 'linear-gradient(135deg, #8a2be2, #ff0080)',
+                color: 'white', fontWeight: '700', fontSize: '1.05rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                boxShadow: '0 10px 25px rgba(138,43,226,0.3)', transition: 'all 0.2s'
+              }}
+            >
+              {applyLoading ? 'Applying...' : appliedJobs.includes(selectedJob.id) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle size={18}/>
+                  {(() => {
+                    const app = applications.find(a => (a.jobId || a.job?.id) === selectedJob.id);
+                    const status = app?.status || 'APPLIED';
+                    return status === 'APPLIED' ? 'Applied Successfully' : `Status: ${status}`;
+                  })()}
+                </div>
+              ) : <>Apply Now <ArrowRight size={18}/></>}
+            </button>
+
+            {!getToken() && (
+              <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '1rem', fontSize: '0.88rem' }}>You need to <span style={{ color: '#c98cff', cursor: 'pointer' }} onClick={() => navigate('/login')}>login</span> to apply.</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import "./dashboard.css";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../auth/auth";
-import { getCurrentUser, getCompanyProfile, getApplicationsByJob } from "../api/authApi";
+import { getCurrentUser, getCompanyProfile, getApplicationsByJob, updateApplicationStatus } from "../api/authApi";
 import { createJob, getCompanyJobs } from "../api/jobApi";
 import { createPortal } from "react-dom";
 import { 
@@ -16,7 +16,8 @@ import {
   Mail, 
   Users, 
   CheckCircle,
-  GraduationCap
+  GraduationCap,
+  FileText
 } from "lucide-react";
 
 function CompanyDashboard() {
@@ -26,6 +27,8 @@ function CompanyDashboard() {
   const [profile, setProfile] = useState({});
   const [showApplicants, setShowApplicants] = useState(false);
   const [jobApplications, setJobApplications] = useState([]);
+  const [appStatuses, setAppStatuses] = useState({});
+  const [toast, setToast] = useState(null); // { message, type: 'success'|'error' }
 
   const [jobData, setJobData] = useState({
     title: "",
@@ -79,14 +82,36 @@ function CompanyDashboard() {
   const handleViewApplicants = async (jobId) => {
     try {
       const res = await getApplicationsByJob(jobId);
-      setJobApplications(
-        Array.isArray(res.data)
-          ? res.data
-          : res.data.data || res.data.applications || []
-      );
+      const apps = Array.isArray(res.data)
+        ? res.data
+        : res.data.data || res.data.applications || [];
+      setJobApplications(apps);
+      // Seed the local status map so dropdowns show current status
+      const statusMap = {};
+      apps.forEach(app => { statusMap[app.id] = app.status; });
+      setAppStatuses(statusMap);
       setShowApplicants(true);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleStatusChange = async (appId, newStatus) => {
+    const prevStatus = appStatuses[appId];
+    setAppStatuses(prev => ({ ...prev, [appId]: newStatus }));
+    try {
+      await updateApplicationStatus(appId, newStatus);
+      showToast(`Status updated to ${newStatus}`, 'success');
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      // Revert optimistic update
+      setAppStatuses(prev => ({ ...prev, [appId]: prevStatus }));
+      showToast('Could not update status. Please try again.', 'error');
     }
   };
 
@@ -109,6 +134,7 @@ function CompanyDashboard() {
   }, []);
 
   return (
+    <>
     <div className="dashboard-wrapper">
       
       {/* 🔮 Background Glow */}
@@ -360,13 +386,65 @@ function CompanyDashboard() {
                 <h2>Applicant Tracking</h2>
                 
                 {jobApplications.length > 0 ? (
-                  jobApplications.map((app) => (
-                    <div key={app.id} className="applicant-card">
-                      <h3>{app.studentName}</h3>
-                      <p>Applied for: {app.jobTitle}</p>
-                      <p style={{color: '#ff0080'}}>Status: {app.status}</p>
-                    </div>
-                  ))
+                  jobApplications.map((app) => {
+                    const currentStatus = appStatuses[app.id] || app.status || "APPLIED";
+                    const statusColor = {
+                      APPLIED:    '#4facfe',
+                      SHORTLISTED:'#ffb20d',
+                      INTERVIEW:  '#c98cff',
+                      HIRED:      '#00e676',
+                      REJECTED:   '#ff4d4d'
+                    }[currentStatus] || '#aaa';
+
+                    return (
+                      <div key={app.id} className="applicant-card">
+                        {/* Top row: name + status badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.8rem' }}>
+                          <div>
+                            <h3 style={{ margin: 0 }}>{app.studentName}</h3>
+                            <p style={{ margin: '0.3rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Applied for: {app.jobTitle}</p>
+                          </div>
+                          <span style={{ background: `${statusColor}22`, color: statusColor, border: `1px solid ${statusColor}55`, borderRadius: '20px', padding: '0.25rem 0.75rem', fontSize: '0.8rem', fontWeight: '600' }}>
+                            {currentStatus}
+                          </span>
+                        </div>
+
+                        {/* Bottom row: status dropdown + view resume */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                          <select
+                            value={currentStatus}
+                            onChange={e => handleStatusChange(app.id, e.target.value)}
+                            style={{
+                              background: 'rgba(0,0,0,0.4)', color: 'white',
+                              border: `1px solid ${statusColor}55`, borderRadius: '8px',
+                              padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', outline: 'none'
+                            }}
+                          >
+                            <option value="APPLIED">Applied</option>
+                            <option value="SHORTLISTED">Shortlisted</option>
+                            <option value="INTERVIEW">Interview Scheduled</option>
+                            <option value="HIRED">Hired</option>
+                            <option value="REJECTED">Rejected</option>
+                          </select>
+
+                          {(app.resumePath || app.ResumePath) && (() => {
+                            const rawUrl = (app.resumePath || app.ResumePath)?.startsWith("http")
+                              ? (app.resumePath || app.ResumePath)
+                              : `https://placement-portal-full-production.up.railway.app/uploads/${app.resumePath || app.ResumePath}`;
+                            const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}`;
+                            return (
+                              <a href={viewerUrl} target="_blank" rel="noreferrer"
+                                className="btn-glass-action"
+                                style={{ background: 'rgba(255,255,255,0.05)', textDecoration: 'none', padding: '0.4rem 1rem', color: 'var(--text-main)', display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                              >
+                                <FileText size={14} /> View Resume
+                              </a>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  })
                 ) : (
                   <div style={{textAlign: 'center', padding: '2rem 0'}}>
                     <Users size={48} style={{opacity: 0.3, marginBottom: '1rem'}} />
@@ -374,10 +452,26 @@ function CompanyDashboard() {
                   </div>
                 )}
 
+                {/* In-modal toast */}
+                {toast && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '0.8rem 1.2rem', borderRadius: '10px', marginTop: '1.5rem',
+                    background: toast.type === 'success' ? 'rgba(0,230,118,0.12)' : 'rgba(255,77,77,0.12)',
+                    border: `1px solid ${toast.type === 'success' ? 'rgba(0,230,118,0.35)' : 'rgba(255,77,77,0.35)'}`,
+                    color: toast.type === 'success' ? '#00e676' : '#ff6b6b',
+                    fontWeight: '600', fontSize: '0.9rem',
+                    animation: 'navDropdown 0.2s ease-out'
+                  }}>
+                    {toast.type === 'success' ? <CheckCircle size={16}/> : '⚠️'}
+                    {toast.message}
+                  </div>
+                )}
+
                 <button 
                   onClick={() => setShowApplicants(false)}
                   className="btn-glass-action" 
-                  style={{marginTop: '2rem', width: '100%'}}
+                  style={{marginTop: '1.5rem', width: '100%'}}
                 >
                   Close Window
                 </button>
@@ -388,6 +482,7 @@ function CompanyDashboard() {
         }
       </div>
     </div>
+    </>
   );
 }
 
