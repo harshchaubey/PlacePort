@@ -370,8 +370,8 @@ http://localhost:8080/v3/api-docs
 ## 👨‍💻 Author
 
 **Harsh Chaubey**
-GitHub:https://github.com/harshchaubey
-Email:harshchaubey189@gmail.com
+-GitHub:https://github.com/harshchaubey
+-Email:harshchaubey189@gmail.com
 
 ---
 
