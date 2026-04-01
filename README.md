@@ -2,7 +2,7 @@
 
 ## 📌 Overview
 
-The **College Placement Portal** is a comprehensive platform designed to digitize and streamline the campus recruitment workflow. It connects three roles — **Students**, **Companies**, and **Admins** — with a secure, role-based system where each user sees only what they need.
+The **College Placement Portal** is a comprehensive platform designed to digitize and streamline the campus recruitment workflow. It connects three roles — **Students** and **Companies** — with a secure, role-based system where each user sees only what they need.
 
 ---
 
@@ -24,9 +24,6 @@ The **College Placement Portal** is a comprehensive platform designed to digitiz
 - View all applications received for each job posting
 - **Update application status** (Shortlist / Reject / Select applicants)
 
-### 👑 Admin
-- Verify registered company accounts to activate them
-- Manage overall placement system workflow
 
 ### 🌐 General
 - Interactive **Landing Page** with job listings and company showcase
@@ -141,7 +138,6 @@ The app supports two authentication strategies, both producing a JWT for subsequ
 |---|---|
 | `STUDENT` | Complete profile, search & apply to jobs, track application status |
 | `COMPANY` | Post jobs, view applicants, shortlist/reject/select candidates |
-| `ADMIN` | Verify company accounts, manage platform |
 
 ---
 
