@@ -16,6 +16,7 @@ API.interceptors.request.use((config) => {
 
 export const loginUser = (data) => API.post("/auth/login", data);
 export const registerUser = (data) => API.post("/auth/register", data);
+export const googleLogin = (data) => API.post("/auth/google", data);
 export const getCurrentUser = () => API.get("/auth/me");
 
 
@@ -33,5 +34,8 @@ export const getAllJobs = () => {
 
 export const updateApplicationStatus = (applicationId, status) =>
   API.patch(`/applications/${applicationId}/status`, { status });
+
+export const getMyNotifications = () => API.get("/notifications/my");
+export const markNotificationAsRead = (id) => API.patch(`/notifications/${id}/read`);
 
 export default API;

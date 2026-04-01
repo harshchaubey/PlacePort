@@ -514,3 +514,107 @@
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* --- MOBILE RESPONSIVENESS (OPTION B: Hamburger) --- */
+
+.hamburger-btn {
+  display: none;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  color: white;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 998;
+}
+
+.overlay.show {
+  display: block;
+}
+
+.topbar-header {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 992px) {
+  .hamburger-btn {
+    display: flex;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.7);
+    z-index: 999;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .topbar {
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .topbar-header {
+    width: 100%;
+    order: -1;
+    margin-bottom: 0.5rem;
+  }
+
+  .topbar-header h2 {
+    font-size: 1.5rem;
+    margin: 0;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .glass-form-card, .profile-glass-card {
+    padding: 1.5rem;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.8rem;
+  }
+
+  .welcome-widget h1 {
+    font-size: 1.6rem;
+  }
+
+  .search-input-group {
+    width: 100%;
+  }
+  
+  .jobs-grid-glass {
+    grid-template-columns: 1fr;
+  }
+}

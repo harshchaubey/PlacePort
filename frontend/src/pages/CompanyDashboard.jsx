@@ -17,7 +17,8 @@ import {
   Users, 
   CheckCircle,
   GraduationCap,
-  FileText
+  FileText,
+  Menu
 } from "lucide-react";
 
 function CompanyDashboard() {
@@ -39,6 +40,8 @@ function CompanyDashboard() {
   });
 
   const navigate = useNavigate();
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const menuItems = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} /> },
@@ -140,8 +143,11 @@ function CompanyDashboard() {
       {/* 🔮 Background Glow */}
       <div className="landing-bg-glow"></div>
 
+      {/* Mobile Overlay */}
+      <div className={`overlay ${isMobileMenuOpen ? 'show' : ''}`} onClick={() => setIsMobileMenuOpen(false)}></div>
+
       {/* 🔵 SIDEBAR */}
-      <div className="sidebar">
+      <div className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="brand-logo" onClick={() => navigate("/")} style={{cursor: 'pointer'}}>
           <GraduationCap className="icon" size={32} />
           PlacePort
@@ -152,7 +158,7 @@ function CompanyDashboard() {
             <li
               key={index}
               className={activeMenu === item.name ? "active" : ""}
-              onClick={() => setActiveMenu(item.name)}
+              onClick={() => { setActiveMenu(item.name); setIsMobileMenuOpen(false); }}
             >
               <span className="icon">{item.icon}</span>
               {item.name}
@@ -171,7 +177,12 @@ function CompanyDashboard() {
         
         {/* 🔝 TOPBAR */}
         <div className="topbar">
-          <h2>{activeMenu}</h2>
+          <div className="topbar-header">
+            <div className="hamburger-btn" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu size={20} />
+            </div>
+            <h2>{activeMenu}</h2>
+          </div>
           <div className="profile-badge" style={{display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--glass-bg)', padding: '10px 20px', borderRadius: '30px', border: '1px solid var(--glass-border)', backdropFilter: 'blur(10px)'}}>
             <Building size={18} color="var(--primary)" />
             <span style={{fontWeight: '600'}}>{user?.name || "Company Portal"}</span>

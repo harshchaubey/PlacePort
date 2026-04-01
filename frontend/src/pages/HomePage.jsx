@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { getAllJobs, applyJob, getAppliedJobs } from "../api/jobApi";
-import { getCurrentUser } from "../api/authApi";
+import { getCurrentUser, getMyNotifications, markNotificationAsRead } from "../api/authApi";
 import { logout, getToken } from "../auth/auth";
-import { Search, MapPin, Briefcase, GraduationCap, TrendingUp, Users, ArrowRight, ArrowLeft, CheckCircle, Flame, Code, Database, LineChart, Megaphone, PenTool, Shield, ChevronDown, User, FileCheck, Settings, LogOut, LayoutDashboard, X } from "lucide-react";
+import { Bell, Search, MapPin, Briefcase, GraduationCap, TrendingUp, Users, ArrowRight, ArrowLeft, CheckCircle, Flame, Code, Database, LineChart, Megaphone, PenTool, Shield, ChevronDown, User, FileCheck, Settings, LogOut, LayoutDashboard, X } from "lucide-react";
 import "./landing.css";
 
 function HomePage() {
@@ -24,6 +24,10 @@ function HomePage() {
   const [applyLoading, setApplyLoading] = useState(false);
   const [isLocFocused, setIsLocFocused] = useState(false);
 
+  const [notifications, setNotifications] = useState([]);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const notificationsMenuRef = useRef(null);
+
   // Fetch logged-in user on mount
   useEffect(() => {
     if (getToken()) {
@@ -31,6 +35,11 @@ function HomePage() {
         .then(res => {
           setCurrentUser(res.data);
           setUserRole(res.data?.role);
+          if (res.data?.role === 'STUDENT') {
+            getMyNotifications().then(notifRes => {
+               setNotifications(notifRes.data || []);
+            }).catch(e => console.error("Error loading notifications:", e));
+          }
         })
         .catch(() => {
           setCurrentUser(null);
@@ -49,6 +58,9 @@ function HomePage() {
         setIsFocused(false);
         setSuggestions([]);
         setIsLocFocused(false);
+      }
+      if (notificationsMenuRef.current && !notificationsMenuRef.current.contains(e.target)) {
+        setShowNotificationsMenu(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -160,9 +172,96 @@ function HomePage() {
             <GraduationCap className="text-primary" size={32} />
             PlacePort
           </div>
-          <div className="nav-buttons">
+          <div className="nav-buttons" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             {currentUser ? (
-              // 🔵 LOGGED-IN: Profile Avatar Dropdown
+              <>
+              {/* Notification Bell for Students */}
+              {userRole === 'STUDENT' && (
+                <div ref={notificationsMenuRef} style={{ position: 'relative' }}>
+                  <div
+                    onClick={() => setShowNotificationsMenu(prev => !prev)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'rgba(255,255,255,0.05)', width: '42px', height: '42px',
+                      borderRadius: '50%', border: '1px solid rgba(255,255,255,0.12)',
+                      backdropFilter: 'blur(10px)', cursor: 'pointer', position: 'relative',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  >
+                    <Bell size={18} color="white" />
+                    {notifications.some(n => !n.read) && (
+                      <span style={{
+                        position: 'absolute', top: '8px', right: '10px', width: '8px', height: '8px',
+                        background: '#ff4d4d', borderRadius: '50%', border: '2px solid rgba(15,23,42,0.9)'
+                      }}></span>
+                    )}
+                  </div>
+
+                  {showNotificationsMenu && (
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                      background: 'rgba(10, 10, 20, 0.96)', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '16px', padding: '0', minWidth: '320px', maxWidth: '350px',
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)',
+                      zIndex: 1000, animation: 'navDropdown 0.15s ease-out', overflow: 'hidden'
+                    }}>
+                      <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: '600', fontSize: '1rem' }}>Notifications</div>
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(79, 172, 254, 0.2)', color: '#4facfe', padding: '2px 8px', borderRadius: '10px' }}>
+                          {notifications.filter(n => !n.read).length} New
+                        </span>
+                      </div>
+                      
+                      <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                          <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            No notifications yet.
+                          </div>
+                        ) : (
+                          notifications.map(notif => (
+                            <div 
+                              key={notif.id}
+                              onClick={async () => {
+                                if(!notif.read) {
+                                  try {
+                                    await markNotificationAsRead(notif.id);
+                                    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                                  } catch(e) { console.error(e); }
+                                }
+                              }}
+                              style={{
+                                padding: '12px 16px',
+                                borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                background: notif.read ? 'transparent' : 'rgba(79, 172, 254, 0.05)',
+                                display: 'flex', gap: '12px', cursor: 'pointer',
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = notif.read ? 'rgba(255,255,255,0.03)' : 'rgba(79, 172, 254, 0.1)'}
+                              onMouseLeave={e => e.currentTarget.style.background = notif.read ? 'transparent' : 'rgba(79, 172, 254, 0.05)'}
+                            >
+                              <div style={{ marginTop: '2px' }}>
+                                {notif.read ? <CheckCircle size={16} color="var(--text-muted)" /> : <div style={{width: '8px', height: '8px', background: '#4facfe', borderRadius: '50%', marginTop: '4px'}}></div>}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '0.85rem', color: notif.read ? 'var(--text-muted)' : 'white', lineHeight: '1.4' }}>
+                                  {notif.message}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                  {new Date(notif.createdAt).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 🔵 LOGGED-IN: Profile Avatar Dropdown */}
               <div ref={profileMenuRef} style={{ position: 'relative' }}>
                 <div
                   onClick={() => setShowProfileMenu(prev => !prev)}
@@ -246,6 +345,7 @@ function HomePage() {
                   </div>
                 )}
               </div>
+              </>
             ) : (
               // 🔴 GUEST: Login / Sign Up buttons
               <>
@@ -258,7 +358,7 @@ function HomePage() {
 
         {/* 🔍 NAUKRI-STYLE SEARCH BAR */}
         <div ref={searchRef} style={{ display: 'flex', justifyContent: 'center', margin: '2rem auto 0', padding: '0 2rem', position: 'relative', zIndex: 100, maxWidth: '860px', width: '100%' }}>
-          <div style={{
+          <div className="naukri-search-wrapper" style={{
             display: 'flex', alignItems: 'center', width: '100%',
             background: 'white', borderRadius: '12px',
             boxShadow: isFocused ? '0 8px 40px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.25)',
@@ -266,7 +366,7 @@ function HomePage() {
           }}>
 
             {/* Keyword input */}
-            <div style={{ flex: 2, display: 'flex', alignItems: 'center', padding: '0 1rem', borderRight: '1px solid #e0e0e0', position: 'relative' }}>
+            <div className="search-field" style={{ flex: 2, display: 'flex', alignItems: 'center', padding: '0 1rem', borderRight: '1px solid #e0e0e0', position: 'relative' }}>
               <Search size={18} style={{ color: '#888', flexShrink: 0, marginRight: '8px' }} />
               <input
                 type="text"
@@ -328,7 +428,7 @@ function HomePage() {
             </div>
 
             {/* Location input with dropdown */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 1rem', position: 'relative' }}>
+            <div className="search-field" style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 1rem', position: 'relative' }}>
               <MapPin size={18} style={{ color: '#888', flexShrink: 0, marginRight: '8px' }} />
               <input
                 type="text"
@@ -383,7 +483,7 @@ function HomePage() {
             </div>
 
             {/* Search button */}
-            <button
+            <button className="search-btn"
               onClick={handleSearch}
               style={{
                 background: 'linear-gradient(135deg, #7c3aed, #db2777)',

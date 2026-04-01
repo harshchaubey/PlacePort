@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { registerUser } from "../api/authApi";
-import { Mail, Lock, User, Briefcase, GraduationCap, ChevronDown, Eye, EyeOff } from "lucide-react";
+import { GoogleLogin } from '@react-oauth/google';
+import { registerUser, loginUser, googleLogin, getCurrentUser } from "../api/authApi";
+import { saveToken } from "../auth/auth";
+import { Mail, Lock, User, Briefcase, GraduationCap, ChevronDown, Eye, EyeOff, X } from "lucide-react";
 import "./landing.css";
 
 function RegisterPage() {
@@ -15,12 +17,69 @@ function RegisterPage() {
   });
   
   const [showPassword, setShowPassword] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [googleCredential, setGoogleCredential] = useState(null);
   
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleCredential(credentialResponse.credential);
+    try {
+      setIsLoading(true);
+      setError("");
+      const response = await googleLogin({ credential: credentialResponse.credential });
+      const { token, role, needsProfile } = response.data;
+      
+      saveToken(token);
+
+      const userRes = await getCurrentUser();
+      if (userRes?.data?.email) {
+        localStorage.setItem("userEmail", userRes.data.email);
+      }
+
+      if (needsProfile) {
+        navigate("/complete-profile", { state: { role } });
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      if (err?.response?.data?.message?.toLowerCase().includes("role is required")) {
+        setShowRoleModal(true);
+      } else {
+        setError(err?.response?.data?.message || "Google registration failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRoleSelection = async (selectedRole) => {
+    try {
+      setIsLoading(true);
+      setShowRoleModal(false);
+      const response = await googleLogin({ 
+        credential: googleCredential, 
+        role: selectedRole 
+      });
+      const { token } = response.data;
+      saveToken(token);
+
+      const userRes = await getCurrentUser();
+      if (userRes?.data?.email) {
+        localStorage.setItem("userEmail", userRes.data.email);
+      }
+
+      navigate("/complete-profile", { state: { role: selectedRole } });
+    } catch (err) {
+      setError(err?.response?.data?.message || "Role selection failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRegister = async (e) => {
@@ -41,6 +100,9 @@ function RegisterPage() {
     try {
       setIsLoading(true);
       await registerUser(form);
+      const loginRes = await loginUser({ email: form.email, password: form.password });
+      const token = loginRes?.data?.token;
+      if (token) saveToken(token);
       localStorage.setItem("userEmail", form.email);
       navigate("/complete-profile", { state: { role: form.role } });
     } catch (err) {
@@ -73,6 +135,23 @@ function RegisterPage() {
               {error}
             </div>
           )}
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google Sign up Failed")}
+              useOneTap
+              theme="filled_blue"
+              shape="pill"
+              text="signup_with"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+            <span style={{ margin: '0 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>or continue with</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+          </div>
 
           <form onSubmit={handleRegister} noValidate>
             <div className="auth-form-group">
@@ -146,8 +225,65 @@ function RegisterPage() {
           </form>
         </div>
       </div>
+
+      {/* Role Selection Modal */}
+      {showRoleModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div style={{
+            background: 'rgba(12,12,25,0.98)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '24px', padding: '2.5rem', maxWidth: '400px', width: '100%',
+            boxShadow: '0 30px 70px rgba(0,0,0,0.6)', textAlign: 'center'
+          }}>
+            <h3 style={{ color: 'white', marginBottom: '1.5rem', fontSize: '1.5rem' }}>Select Account Type</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>How will you be using PlacePort?</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <button
+                onClick={() => handleRoleSelection("STUDENT")}
+                className="btn-outline-glow w-100"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                  padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.03)', color: 'white', fontWeight: '600'
+                }}
+              >
+                <GraduationCap size={20} /> I am a Student
+              </button>
+              
+              <button
+                onClick={() => handleRoleSelection("COMPANY")}
+                className="btn-outline-glow w-100"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
+                  padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.03)', color: 'white', fontWeight: '600'
+                }}
+              >
+                <Building2 size={20} /> I am a Recruiter
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowRoleModal(false)}
+              style={{
+                marginTop: '1.5rem', background: 'transparent', border: 'none',
+                color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.9rem'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Simple Building icon stub since Building2 is not imported from lucide-react initially
+const Building2 = ({ size }) => <Briefcase size={size} />;
 
 export default RegisterPage;

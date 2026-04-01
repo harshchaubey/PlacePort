@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { loginUser, getCurrentUser } from "../api/authApi";
+import { GoogleLogin } from '@react-oauth/google';
+import { googleLogin, loginUser, getCurrentUser } from "../api/authApi";
 import { saveToken } from "../auth/auth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, GraduationCap } from "lucide-react";
@@ -10,9 +11,52 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [googleCredential, setGoogleCredential] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setGoogleCredential(credentialResponse.credential);
+    try {
+      setIsLoading(true);
+      setError("");
+      const response = await googleLogin({ credential: credentialResponse.credential });
+      const { token, role, needsProfile } = response.data;
+
+      saveToken(token);
+
+      const userRes = await getCurrentUser();
+      if (userRes?.data?.email) {
+        localStorage.setItem("userEmail", userRes.data.email);
+      }
+      
+      const searchParams = new URLSearchParams(location.search);
+      const redirectPath = searchParams.get("redirect");
+      const applyJobId = searchParams.get("applyJobId");
+
+      if (needsProfile) {
+        navigate("/complete-profile", { state: { role } });
+      } else if (redirectPath) {
+        navigate(`${redirectPath}${applyJobId ? `?applyJobId=${applyJobId}` : ''}`);
+      } else if (role === "ADMIN") {
+        navigate("/admin");
+      } else if (role === "COMPANY") {
+        navigate("/company");
+      } else {
+        navigate("/");
+      }
+    } catch (err) {
+      if (err?.response?.data?.message?.toLowerCase().includes("role is required")) {
+        setError("Account not found. Please sign up first.");
+      } else {
+        console.error("Google login error:", err);
+        setError(err?.response?.data?.message || "Google login failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const validateForm = () => {
     if (!email.trim() || !password.trim()) {
@@ -58,6 +102,8 @@ function LoginPage() {
         navigate(`${redirectPath}${applyJobId ? `?applyJobId=${applyJobId}` : ''}`);
       } else if (role === "ADMIN") {
         navigate("/admin");
+      } else if (role === "COMPANY") {
+        navigate("/company");
       } else {
         navigate("/");
       }
@@ -96,6 +142,23 @@ function LoginPage() {
               {error}
             </div>
           )}
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google Login Failed")}
+              useOneTap
+              theme="filled_blue"
+              shape="pill"
+              text="signin_with"
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+            <span style={{ margin: '0 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>or continue with</span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
+          </div>
 
           <form onSubmit={handleLogin} noValidate>
             <div className="auth-form-group">

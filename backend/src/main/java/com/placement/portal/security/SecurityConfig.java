@@ -43,13 +43,13 @@ public class SecurityConfig {
                         .requestMatchers("/companies/pending").hasRole("ADMIN")
 
                         // company only
-                        //.requestMatchers("/jobs/**"). hasRole("COMPANY")
-                        .requestMatchers("/application/job/**").hasRole("COMPANY")
+                        // company only
+                        .requestMatchers("/applications/job/**", "/applications/*/status").hasRole("COMPANY")
 
                         // student only
                         .requestMatchers("/students/**").hasRole("STUDENT")
                         .requestMatchers("/jobs/**").hasAnyRole("STUDENT", "COMPANY", "ADMIN")
-                        .requestMatchers("/applicatons/**").hasRole("STUDENT")
+                        .requestMatchers("/applications/apply/**", "/applications/my", "/applications/student/**").hasRole("STUDENT")
 
                         // all others api
 
@@ -73,6 +73,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173",
+                                         "http://localhost:5174",
+                                         "http://localhost:5175",
+                                         "http://localhost:5176",
                                          "http://localhost:3000" ,
                                         "https://placement-portal-full-production.up.railway.app",
                                         "https://placement-portal-job.up.railway.app"));

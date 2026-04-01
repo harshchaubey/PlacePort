@@ -6,8 +6,10 @@ import com.placement.portal.entity.Job;
 import com.placement.portal.entity.Student;
 import com.placement.portal.exception.BadRequestException;
 import com.placement.portal.exception.ResourceNotFoundException;
+import com.placement.portal.entity.Notification;
 import com.placement.portal.repository.ApplicationRepository;
 import com.placement.portal.repository.JobRepository;
+import com.placement.portal.repository.NotificationRepository;
 import com.placement.portal.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -23,6 +25,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final JobRepository jobRepository;
     private final StudentRepository studentRepository;
+    private final NotificationRepository notificationRepository;
 
 
     @Override
@@ -99,6 +102,19 @@ public class ApplicationServiceImpl implements ApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
         application.setStatus(status.toUpperCase());
         Application saved = applicationRepository.save(application);
+
+        // Generate a notification for the student
+        String companyName = application.getJob().getCompany().getCompanyName();
+        String jobTitle = application.getJob().getTitle();
+        String displayStatus = status.substring(0, 1).toUpperCase() + status.substring(1).toLowerCase();
+        
+        Notification notification = Notification.builder()
+                .student(application.getStudent())
+                .message("Your application for " + jobTitle + " at " + companyName + " has been marked as: " + displayStatus)
+                .isRead(false)
+                .build();
+        notificationRepository.save(notification);
+
         return mapToResponse(saved);
     }
 

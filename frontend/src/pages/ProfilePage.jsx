@@ -96,7 +96,7 @@ function CompleteProfile() {
         }
 
         await createStudentProfile(formData);
-        navigate("/student"); 
+        navigate("/"); 
       } else if (role === "COMPANY") {
         await createCompanyProfile(companyForm);
         navigate("/company");
@@ -175,7 +175,7 @@ function CompleteProfile() {
                       <label>Roll Number</label>
                       <div className="auth-input-wrapper">
                         <Hash size={18} />
-                        <input name="rollNo" placeholder="21BCA0123" onChange={handleStudentChange} value={studentForm.rollNo} required />
+                        <input name="rollNo" placeholder="123456789" onChange={handleStudentChange} value={studentForm.rollNo} required />
                       </div>
                     </div>
                   </div>

@@ -28,8 +28,11 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
+
+    @Column(nullable = true)
+    private String googleId;
 
     @Enumerated(EnumType.STRING)
     private Role role;
