@@ -57,6 +57,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- PostgreSQL for Supabase -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- Lombok (ONLY ONCE) -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

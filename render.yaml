@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: placement-portal-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    repo: https://github.com/your-username/placement-portal-full
+    branch: main
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DB_URL
+        sync: false # Set this in the Render dashboard: jdbc:postgresql://<SUPABASE_HOST>:5432/postgres?user=postgres&password=<PASSWORD>
+      - key: DB_USERNAME
+        sync: false # e.g. postgres
+      - key: DB_PASSWORD
+        sync: false # e.g. password
+      - key: DB_DRIVER
+        value: org.postgresql.Driver
+      - key: DB_DIALECT
+        value: org.hibernate.dialect.PostgreSQLDialect
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLOUDINARY_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
