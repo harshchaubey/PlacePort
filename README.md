@@ -23,8 +23,6 @@ The **College Placement Portal** is a comprehensive platform designed to digitiz
 - Post job openings with title, description, salary, eligible branch, min CGPA, and required skills
 - View all applications received for each job posting
 - **Update application status** (Shortlist / Reject / Select applicants)
-
-
 ### 🌐 General
 - Interactive **Landing Page** with job listings and company showcase
 - Fully **Dockerized** for one-command deployment
@@ -138,7 +136,6 @@ The app supports two authentication strategies, both producing a JWT for subsequ
 |---|---|
 | `STUDENT` | Complete profile, search & apply to jobs, track application status |
 | `COMPANY` | Post jobs, view applicants, shortlist/reject/select candidates |
-
 ---
 
 ## 📡 API Endpoints
