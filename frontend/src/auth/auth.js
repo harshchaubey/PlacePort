@@ -8,7 +8,10 @@ export const getToken= () => {
 return localStorage.getItem(TOKEN_KEY);};
 
 export const isAuthenticated = () => {
-return !!getToken();
+  if(getToken()){
+    return true;
+  }
+  return false;
 };
 export const logout = () => {
 localStorage.removeItem(TOKEN_KEY);

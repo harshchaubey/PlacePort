@@ -3,6 +3,8 @@ package com.placement.portal.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 public class ApplicationResponseDTO {
@@ -20,4 +22,6 @@ public class ApplicationResponseDTO {
     private String companyName;
 
     private String resumePath;
+
+    private LocalDateTime appliedAt;
 }

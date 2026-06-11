@@ -21,7 +21,8 @@ import {
   Mail,
   ChevronDown,
   Bell,
-  Menu
+  Menu,
+  Clock
 } from "lucide-react";
 
 function StudentDashboard() {
@@ -32,6 +33,7 @@ function StudentDashboard() {
   const [applications, setApplications] = useState([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
+  const [selectedJob, setSelectedJob] = useState(null); // for View Details modal
 
   const [notifications, setNotifications] = useState([]);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
@@ -43,6 +45,7 @@ function StudentDashboard() {
   const initialTab = new URLSearchParams(location.search).get("tab") || "Dashboard";
   const [activeMenu, setActiveMenu] = useState(initialTab);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleLogout = () => {
     logout();
@@ -89,6 +92,7 @@ function StudentDashboard() {
 
   const menuItems = [
     { name: "Dashboard", icon: <LayoutDashboard size={20} /> },
+    { name: "Jobs", icon: <Briefcase size={20} /> },
     { name: "Applications", icon: <FileCheck size={20} /> },
     { name: "Profile", icon: <User size={20} /> },
     { name: "Settings", icon: <Settings size={20} /> }
@@ -142,6 +146,20 @@ function StudentDashboard() {
     return app?.status || null;
   };
 
+  // Derived: jobs filtered by search query
+  const filteredJobs = searchQuery.trim() === ""
+    ? jobs
+    : jobs.filter(job => {
+        const q = searchQuery.toLowerCase();
+        return (
+          job.title?.toLowerCase().includes(q) ||
+          job.companyName?.toLowerCase().includes(q) ||
+          job.eligibleBranch?.toLowerCase().includes(q) ||
+          job.salary?.toLowerCase().includes(q) ||
+          job.companyLocation?.toLowerCase().includes(q)
+        );
+      });
+
   return (
     <div className="dashboard-wrapper">
 
@@ -194,8 +212,15 @@ function StudentDashboard() {
               <Search size={16} color="var(--text-muted)" />
               <input 
                 placeholder="Search jobs..." 
-                style={{background: 'transparent', border: 'none', color: 'white', outline: 'none', padding: '5px 0'}} 
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setActiveMenu("Jobs"); }}
+                style={{background: 'transparent', border: 'none', color: 'white', outline: 'none', padding: '5px 0', width: '160px'}} 
               />
+              {searchQuery && (
+                <span style={{fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap'}}>
+                  {filteredJobs.length} result{filteredJobs.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </div>
 
             {/* Notification Bell */}
@@ -457,8 +482,23 @@ function StudentDashboard() {
         {/* 🔵 JOBS BROWSER */}
         {activeMenu === "Jobs" && (
           <div className="animate__animated animate__fadeIn">
+            {/* Search result hint */}
+            {searchQuery.trim() !== "" && (
+              <div style={{marginBottom: '1.5rem', color: 'var(--text-muted)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <Search size={14} />
+                Showing <strong style={{color: 'white'}}>{filteredJobs.length}</strong> result{filteredJobs.length !== 1 ? 's' : ''} for &ldquo;<strong style={{color: '#4facfe'}}>{searchQuery}</strong>&rdquo;
+                <button onClick={() => setSearchQuery('')} style={{marginLeft: '8px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--text-muted)', borderRadius: '20px', padding: '2px 10px', cursor: 'pointer', fontSize: '0.8rem'}}>Clear</button>
+              </div>
+            )}
+            {filteredJobs.length === 0 ? (
+              <div style={{textAlign: 'center', padding: '5rem', background: 'var(--glass-bg)', borderRadius: '20px', border: '1px solid var(--glass-border)'}}>
+                <Search size={48} style={{opacity: 0.3, marginBottom: '1rem', color: '#4facfe'}} />
+                <h3>No jobs match &ldquo;{searchQuery}&rdquo;</h3>
+                <p style={{color: 'var(--text-muted)'}}>Try a different keyword or <button onClick={() => setSearchQuery('')} style={{background: 'none', border: 'none', color: '#4facfe', cursor: 'pointer', fontSize: 'inherit', textDecoration: 'underline'}}>clear search</button>.</p>
+              </div>
+            ) : (
             <div className="jobs-grid-glass">
-              {jobs.map((job) => (
+              {filteredJobs.map((job) => (
                 <div className="job-glass-card" key={job.id}>
                   <div className="job-glass-header">
                     <h3>{job.title}</h3>
@@ -468,7 +508,7 @@ function StudentDashboard() {
                   </div>
                   
                   <p className="job-glass-desc" style={{marginBottom: "1rem"}}>
-                    {job.description || "No description provided by the employer."}
+                    {job.description?.substring(0, 100) || "No description provided."}{job.description?.length > 100 ? '...' : ''}
                   </p>
                   
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1.5rem', fontSize: '0.85rem', color: "var(--text-muted)"}}>
@@ -484,10 +524,16 @@ function StudentDashboard() {
                       📍 {job.companyLocation || job.location || "Remote / Hybrid"}
                     </div>
                   </div>
-                  
 
-
-                  <div className="job-glass-actions">
+                  <div className="job-glass-actions" style={{gap: '0.6rem'}}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedJob(job)}
+                      className="btn-glass-action"
+                      style={{background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)', flex: 1}}
+                    >
+                      View Details
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleApply(job.id)}
@@ -497,19 +543,158 @@ function StudentDashboard() {
                         background: appliedJobs.includes(job.id) ? 'rgba(0, 230, 118, 0.2)' : 'rgba(79, 172, 254, 0.2)',
                         borderColor: appliedJobs.includes(job.id) ? 'rgba(0, 230, 118, 0.4)' : 'rgba(79, 172, 254, 0.4)',
                         color: appliedJobs.includes(job.id) ? '#00e676' : 'white',
-                        width: '100%'
+                        flex: 1
                       }}
                     >
                       {appliedJobs.includes(job.id) ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <CheckCircle size={16} /> 
-                          {getJobStatus(job.id) === 'APPLIED' ? 'Applied Successfully' : `Status: ${getJobStatus(job.id)}`}
+                          {getJobStatus(job.id) === 'APPLIED' ? 'Applied' : getJobStatus(job.id)}
                         </div>
                       ) : "Apply Now →"}
                     </button>
                   </div>
                 </div>
               ))}
+            </div>
+            )}
+          </div>
+        )}
+
+        {/* 🔍 JOB DETAIL MODAL */}
+        {selectedJob && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 2000,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '1rem'
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedJob(null); }}
+          >
+            <div style={{
+              background: 'rgba(15,15,30,0.97)', border: '1px solid rgba(79,172,254,0.25)',
+              borderRadius: '24px', padding: '2.5rem', maxWidth: '700px', width: '100%',
+              maxHeight: '90vh', overflowY: 'auto',
+              boxShadow: '0 30px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(79,172,254,0.1)'
+            }}>
+              {/* Header */}
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1.8rem'}}>
+                <div>
+                  <h2 style={{margin:0, fontSize:'1.6rem', fontWeight:'800', color:'white'}}>{selectedJob.title}</h2>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px', marginTop:'0.5rem'}}>
+                    <span style={{background:'rgba(79,172,254,0.15)', color:'#4facfe', padding:'4px 12px', borderRadius:'20px', fontSize:'0.85rem', fontWeight:'600', border:'1px solid rgba(79,172,254,0.3)'}}>
+                      {selectedJob.companyName}
+                    </span>
+                    {selectedJob.companyLocation && (
+                      <span style={{color:'var(--text-muted)', fontSize:'0.85rem', display:'flex', alignItems:'center', gap:'4px'}}>
+                        <MapPin size={13} /> {selectedJob.companyLocation}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)', color:'white', borderRadius:'10px', padding:'8px 14px', cursor:'pointer', fontSize:'1rem', flexShrink:0}}
+                >✕ Close</button>
+              </div>
+
+              {/* Meta pills */}
+              <div style={{display:'flex', flexWrap:'wrap', gap:'10px', marginBottom:'2rem'}}>
+                <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                  🎓 Min CGPA: <strong style={{color:'#4facfe'}}>{selectedJob.minCgpa}</strong>
+                </div>
+                {selectedJob.salary && (
+                  <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                    💰 <strong style={{color:'#00e676'}}>{selectedJob.salary}</strong>
+                  </div>
+                )}
+                {selectedJob.eligibleBranch && (
+                  <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                    🏫 Branch: <strong style={{color:'#ffb20d'}}>{selectedJob.eligibleBranch}</strong>
+                  </div>
+                )}
+                {selectedJob.lastDate && (
+                  <div style={{background:'rgba(255,77,77,0.08)', border:'1px solid rgba(255,77,77,0.2)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'#ff8a8a'}}>
+                    📅 Apply by: <strong>{selectedJob.lastDate}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {selectedJob.description && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'0.8rem'}}>About the Role</h4>
+                  <p style={{color:'rgba(255,255,255,0.8)', lineHeight:'1.7', fontSize:'0.95rem', margin:0}}>{selectedJob.description}</p>
+                </div>
+              )}
+
+              {/* Responsibilities */}
+              {selectedJob.responsibilities?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'1rem'}}>Responsibilities</h4>
+                  <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.65rem'}}>
+                    {selectedJob.responsibilities.map((r, i) => (
+                      <li key={i} style={{display:'flex', gap:'10px', alignItems:'flex-start', color:'rgba(255,255,255,0.82)', fontSize:'0.93rem', lineHeight:'1.5'}}>
+                        <span style={{color:'#4facfe', marginTop:'2px', flexShrink:0, fontSize:'1.1rem'}}>•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {selectedJob.requirements?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'1rem'}}>Requirements</h4>
+                  <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.65rem'}}>
+                    {selectedJob.requirements.map((r, i) => (
+                      <li key={i} style={{display:'flex', gap:'10px', alignItems:'flex-start', color:'rgba(255,255,255,0.82)', fontSize:'0.93rem', lineHeight:'1.5'}}>
+                        <span style={{color:'#00e676', marginTop:'2px', flexShrink:0, fontSize:'1.1rem'}}>•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Skills */}
+              {selectedJob.skills?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'0.8rem'}}>Key Skills</h4>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
+                    {selectedJob.skills.map((s, i) => (
+                      <span key={i} style={{background:'rgba(201,140,255,0.1)', border:'1px solid rgba(201,140,255,0.3)', color:'#c98cff', padding:'5px 12px', borderRadius:'20px', fontSize:'0.82rem', fontWeight:'600'}}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{display:'flex', gap:'1rem', marginTop:'2rem', borderTop:'1px solid rgba(255,255,255,0.07)', paddingTop:'1.5rem'}}>
+                <button
+                  type="button"
+                  onClick={() => { handleApply(selectedJob.id); setSelectedJob(null); }}
+                  disabled={appliedJobs.includes(selectedJob.id)}
+                  className="btn-glossy"
+                  style={{
+                    flex:1, background: appliedJobs.includes(selectedJob.id)
+                      ? 'linear-gradient(135deg, rgba(0,230,118,0.3), rgba(0,200,100,0.3))'
+                      : 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                    boxShadow: appliedJobs.includes(selectedJob.id) ? 'none' : '0 8px 20px rgba(79,172,254,0.3)',
+                    cursor: appliedJobs.includes(selectedJob.id) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {appliedJobs.includes(selectedJob.id) ? (
+                    <><CheckCircle size={18} /> Already Applied</>
+                  ) : 'Apply Now →'}
+                </button>
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', color:'var(--text-muted)', borderRadius:'12px', padding:'0.8rem 1.5rem', cursor:'pointer', fontWeight:'600'}}
+                >Close</button>
+              </div>
             </div>
           </div>
         )}
@@ -535,11 +720,21 @@ function StudentDashboard() {
                     REJECTED:    { color: '#ff4d4d', label: 'Rejected' },
                   }[status] || { color: '#aaa', label: status };
 
+                  const appliedDate = app.appliedAt
+                    ? new Date(app.appliedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : null;
+
                   return (
                     <div key={app.id} className="job-glass-card" style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem'}}>
                       <div>
                         <h3 style={{margin: '0 0 0.3rem 0'}}>{app.jobTitle}</h3>
                         <p style={{margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem'}}>{app.companyName}</p>
+                        {appliedDate && (
+                          <div style={{display: 'flex', alignItems: 'center', gap: '5px', marginTop: '0.4rem', color: 'var(--text-muted)', fontSize: '0.78rem'}}>
+                            <Clock size={12} />
+                            Applied on {appliedDate}
+                          </div>
+                        )}
                       </div>
 
                       <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>

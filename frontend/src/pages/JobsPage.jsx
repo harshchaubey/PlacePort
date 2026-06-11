@@ -10,6 +10,7 @@ function JobsPage() {
   const [jobs, setJobs] = useState([]);
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -249,6 +250,7 @@ function JobsPage() {
                   <button 
                     className="btn-apply"
                     style={{ flex: 1 }}
+                    onClick={() => setSelectedJob(job)}
                   >
                     <Bookmark size={16} style={{marginRight: "5px", verticalAlign: "middle"}}/> Details
                   </button>
@@ -256,6 +258,144 @@ function JobsPage() {
 
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 🔍 JOB DETAIL MODAL */}
+        {selectedJob && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 2000,
+              background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '1rem'
+            }}
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedJob(null); }}
+          >
+            <div style={{
+              background: 'rgba(15,15,30,0.97)', border: '1px solid rgba(79,172,254,0.25)',
+              borderRadius: '24px', padding: '2.5rem', maxWidth: '700px', width: '100%',
+              maxHeight: '90vh', overflowY: 'auto',
+              boxShadow: '0 30px 60px rgba(0,0,0,0.6)'
+            }}>
+              {/* Header */}
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1.8rem'}}>
+                <div>
+                  <h2 style={{margin:0, fontSize:'1.6rem', fontWeight:'800', color:'white'}}>{selectedJob.title}</h2>
+                  <div style={{display:'flex', alignItems:'center', gap:'10px', marginTop:'0.5rem'}}>
+                    <span style={{background:'rgba(79,172,254,0.15)', color:'#4facfe', padding:'4px 12px', borderRadius:'20px', fontSize:'0.85rem', fontWeight:'600', border:'1px solid rgba(79,172,254,0.3)'}}>
+                      {selectedJob.companyName}
+                    </span>
+                    {selectedJob.companyLocation && (
+                      <span style={{color:'var(--text-muted)', fontSize:'0.85rem', display:'flex', alignItems:'center', gap:'4px'}}>
+                        <MapPin size={13} /> {selectedJob.companyLocation}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  style={{background:'rgba(255,255,255,0.07)', border:'1px solid rgba(255,255,255,0.1)', color:'white', borderRadius:'10px', padding:'8px 14px', cursor:'pointer', fontSize:'1rem', flexShrink:0}}
+                >✕ Close</button>
+              </div>
+
+              {/* Meta pills */}
+              <div style={{display:'flex', flexWrap:'wrap', gap:'10px', marginBottom:'2rem'}}>
+                <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                  🎓 Min CGPA: <strong style={{color:'#4facfe'}}>{selectedJob.minCgpa}</strong>
+                </div>
+                {selectedJob.salary && (
+                  <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                    💰 <strong style={{color:'#00e676'}}>{selectedJob.salary}</strong>
+                  </div>
+                )}
+                {selectedJob.eligibleBranch && (
+                  <div style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'var(--text-muted)'}}>
+                    🏫 Branch: <strong style={{color:'#ffb20d'}}>{selectedJob.eligibleBranch}</strong>
+                  </div>
+                )}
+                {selectedJob.lastDate && (
+                  <div style={{background:'rgba(255,77,77,0.08)', border:'1px solid rgba(255,77,77,0.2)', borderRadius:'10px', padding:'8px 14px', fontSize:'0.85rem', color:'#ff8a8a'}}>
+                    📅 Apply by: <strong>{selectedJob.lastDate}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {selectedJob.description && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'0.8rem'}}>About the Role</h4>
+                  <p style={{color:'rgba(255,255,255,0.8)', lineHeight:'1.7', fontSize:'0.95rem', margin:0}}>{selectedJob.description}</p>
+                </div>
+              )}
+
+              {/* Responsibilities */}
+              {selectedJob.responsibilities?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'1rem'}}>Responsibilities</h4>
+                  <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.65rem'}}>
+                    {selectedJob.responsibilities.map((r, i) => (
+                      <li key={i} style={{display:'flex', gap:'10px', alignItems:'flex-start', color:'rgba(255,255,255,0.82)', fontSize:'0.93rem', lineHeight:'1.5'}}>
+                        <span style={{color:'#4facfe', marginTop:'2px', flexShrink:0, fontSize:'1.1rem'}}>•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Requirements */}
+              {selectedJob.requirements?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'1rem'}}>Requirements</h4>
+                  <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.65rem'}}>
+                    {selectedJob.requirements.map((r, i) => (
+                      <li key={i} style={{display:'flex', gap:'10px', alignItems:'flex-start', color:'rgba(255,255,255,0.82)', fontSize:'0.93rem', lineHeight:'1.5'}}>
+                        <span style={{color:'#00e676', marginTop:'2px', flexShrink:0, fontSize:'1.1rem'}}>•</span>
+                        {r}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Skills */}
+              {selectedJob.skills?.length > 0 && (
+                <div style={{marginBottom:'2rem'}}>
+                  <h4 style={{color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1.5px', fontSize:'0.75rem', marginBottom:'0.8rem'}}>Key Skills</h4>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:'8px'}}>
+                    {selectedJob.skills.map((s, i) => (
+                      <span key={i} style={{background:'rgba(201,140,255,0.1)', border:'1px solid rgba(201,140,255,0.3)', color:'#c98cff', padding:'5px 12px', borderRadius:'20px', fontSize:'0.82rem', fontWeight:'600'}}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{display:'flex', gap:'1rem', marginTop:'2rem', borderTop:'1px solid rgba(255,255,255,0.07)', paddingTop:'1.5rem'}}>
+                <button
+                  type="button"
+                  onClick={() => { handleApply(selectedJob.id); setSelectedJob(null); }}
+                  disabled={appliedJobs.includes(selectedJob.id)}
+                  style={{
+                    flex:1, padding:'0.9rem', borderRadius:'12px', fontWeight:'700', cursor: appliedJobs.includes(selectedJob.id) ? 'not-allowed' : 'pointer',
+                    background: appliedJobs.includes(selectedJob.id)
+                      ? 'linear-gradient(135deg, rgba(0,230,118,0.3), rgba(0,200,100,0.3))'
+                      : 'linear-gradient(135deg, #4facfe, #00f2fe)',
+                    border:'none', color:'white', fontSize:'1rem',
+                    boxShadow: appliedJobs.includes(selectedJob.id) ? 'none' : '0 8px 20px rgba(79,172,254,0.3)'
+                  }}
+                >
+                  {appliedJobs.includes(selectedJob.id) ? (
+                    <><CheckCircle size={18} style={{marginRight:'8px', verticalAlign:'middle'}} /> Already Applied</>
+                  ) : 'Apply Now →'}
+                </button>
+                <button
+                  onClick={() => setSelectedJob(null)}
+                  style={{background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.7)', borderRadius:'12px', padding:'0.9rem 1.5rem', cursor:'pointer', fontWeight:'600'}}
+                >Close</button>
+              </div>
+            </div>
           </div>
         )}
 

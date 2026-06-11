@@ -78,7 +78,7 @@ public class GlobalExceptionHandler {
     }
 
 
-    // 🔥 Fallback (Any other exception)
+    // Fallback (Any other exception)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(
             Exception ex,

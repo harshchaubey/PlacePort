@@ -28,6 +28,12 @@ public class Job {
     @ElementCollection
     private List<String> skills;
 
+    @ElementCollection
+    private List<String> responsibilities;
+
+    @ElementCollection
+    private List<String> requirements;
+
     @ManyToOne
     @JoinColumn(name = "company_id") // create a foreign key column in the current table
 

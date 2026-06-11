@@ -17,6 +17,8 @@ public class JobResponseDTO {
     private String lastDate;
     private String salary;
     private List<String> skills;
+    private List<String> responsibilities;
+    private List<String> requirements;
 
     // company info (safe fields only)
     private Long companyId;

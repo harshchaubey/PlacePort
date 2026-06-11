@@ -43,6 +43,8 @@ public class JobServiceImpl implements JobService {
          job.setLastDate(dto.getLastDate());
          job.setSalary(dto.getSalary());
          job.setSkills(dto.getSkills());
+         job.setResponsibilities(dto.getResponsibilities());
+         job.setRequirements(dto.getRequirements());
          job.setCompany(company);
 
          Job savedJob = jobRepository.save(job);
@@ -94,6 +96,8 @@ public class JobServiceImpl implements JobService {
                 job.getLastDate(),
                 job.getSalary(),
                 job.getSkills(),
+                job.getResponsibilities(),
+                job.getRequirements(),
                 job.getCompany() != null ? job.getCompany().getId() : null,
                 job.getCompany() != null ? job.getCompany().getCompanyName() : null,
                 job.getCompany() != null ? job.getCompany().getLocation() : null

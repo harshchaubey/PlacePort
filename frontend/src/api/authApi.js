@@ -38,4 +38,10 @@ export const updateApplicationStatus = (applicationId, status) =>
 export const getMyNotifications = () => API.get("/notifications/my");
 export const markNotificationAsRead = (id) => API.patch(`/notifications/${id}/read`);
 
+// Admin APIs
+export const getAllStudents = () => API.get("/students");
+export const getAllCompanies = () => API.get("/companies");
+export const verifyCompany = (id) => API.put(`/companies/verify/${id}`);
+export const getPendingCompanies = () => API.get("/companies/pending");
+
 export default API;

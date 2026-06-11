@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -32,7 +35,9 @@ public class Application {
     private String fileName;
     private String ResumePath;
 
-
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime appliedAt;
 
     // Applied,shortlisted,rejected,selected;
 }

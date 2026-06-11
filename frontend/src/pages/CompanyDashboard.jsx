@@ -36,8 +36,13 @@ function CompanyDashboard() {
     description: "",
     minCgpa: "",
     salary: "",
+    eligibleBranch: "",
+    lastDate: "",
     skills: ""
   });
+
+  const [responsibilities, setResponsibilities] = useState([""]);
+  const [requirements, setRequirements] = useState([""]);
 
   const navigate = useNavigate();
 
@@ -59,17 +64,23 @@ function CompanyDashboard() {
     try {
       const payload = {
         ...jobData,
-        skills: jobData.skills ? jobData.skills.split(',').map(s => s.trim()).filter(Boolean) : []
+        skills: jobData.skills ? jobData.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
+        responsibilities: responsibilities.filter(r => r.trim() !== ''),
+        requirements: requirements.filter(r => r.trim() !== '')
       };
       await createJob(payload);
-      alert("Job posted successfully ✅");
+      showToast("Job posted successfully! 🚀", 'success');
       setJobData({
         title: "",
         description: "",
         minCgpa: "",
         salary: "",
+        eligibleBranch: "",
+        lastDate: "",
         skills: ""
       });
+      setResponsibilities([""]);
+      setRequirements([""]);
       
       // refresh jobs
       const res = await getCompanyJobs();
@@ -78,7 +89,7 @@ function CompanyDashboard() {
       setActiveMenu("My Jobs"); 
     } catch (err) {
       console.error(err);
-      alert("Error posting job ❌");
+      showToast("Failed to post job. Please try again.", 'error');
     }
   };
 
@@ -212,7 +223,7 @@ function CompanyDashboard() {
                   <Users strokeWidth={2.5} />
                 </div>
                 <div className="stat-info">
-                  <h3>0</h3>
+                  <h3>{jobs.reduce((sum, j) => sum + (j.applicationCount || 0), 0)}</h3>
                   <p>Total Applicants</p>
                 </div>
               </div>
@@ -221,15 +232,14 @@ function CompanyDashboard() {
                   <CheckCircle strokeWidth={2.5} />
                 </div>
                 <div className="stat-info">
-                  <h3>0</h3>
-                  <p>Hired Students</p>
+                  <h3>{jobs.length > 0 ? "—" : 0}</h3>
+                  <p>View in Applicants</p>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* 🟢 POST JOB */}
         {activeMenu === "Post Job" && (
           <div className="glass-form-card animate__animated animate__fadeInUp">
             <h3>🚀 Create New Posting</h3>
@@ -260,11 +270,89 @@ function CompanyDashboard() {
               <label>Role Description</label>
               <textarea
                 className="form-control"
-                rows="4"
-                placeholder="Describe the responsibilities and expectations..."
+                rows="3"
+                placeholder="Brief overview of the role..."
                 value={jobData.description}
                 onChange={(e) => setJobData({ ...jobData, description: e.target.value })}
               />
+            </div>
+
+            {/* Responsibilities */}
+            <div className="form-group">
+              <label style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                📋 Responsibilities
+                <span style={{fontSize:'0.78rem', color:'var(--text-muted)', fontWeight:'400'}}>Add bullet points</span>
+              </label>
+              <div style={{display:'flex', flexDirection:'column', gap:'0.6rem'}}>
+                {responsibilities.map((item, idx) => (
+                  <div key={idx} style={{display:'flex', alignItems:'center', gap:'0.6rem'}}>
+                    <span style={{color:'var(--primary)', fontSize:'1.1rem', flexShrink:0}}>•</span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{margin:0}}
+                      placeholder={`Responsibility ${idx + 1}...`}
+                      value={item}
+                      onChange={(e) => {
+                        const updated = [...responsibilities];
+                        updated[idx] = e.target.value;
+                        setResponsibilities(updated);
+                      }}
+                    />
+                    {responsibilities.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setResponsibilities(prev => prev.filter((_, i) => i !== idx))}
+                        style={{background:'rgba(255,77,77,0.15)', border:'1px solid rgba(255,77,77,0.3)', color:'#ff6b6b', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', flexShrink:0}}
+                      >✕</button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setResponsibilities(prev => [...prev, ''])}
+                  style={{background:'rgba(79,172,254,0.1)', border:'1px dashed rgba(79,172,254,0.4)', color:'#4facfe', borderRadius:'10px', padding:'0.5rem 1rem', cursor:'pointer', fontSize:'0.88rem', alignSelf:'flex-start', marginTop:'0.2rem'}}
+                >+ Add Responsibility</button>
+              </div>
+            </div>
+
+            {/* Requirements */}
+            <div className="form-group">
+              <label style={{display:'flex', alignItems:'center', gap:'8px'}}>
+                ✅ Requirements
+                <span style={{fontSize:'0.78rem', color:'var(--text-muted)', fontWeight:'400'}}>Add bullet points</span>
+              </label>
+              <div style={{display:'flex', flexDirection:'column', gap:'0.6rem'}}>
+                {requirements.map((item, idx) => (
+                  <div key={idx} style={{display:'flex', alignItems:'center', gap:'0.6rem'}}>
+                    <span style={{color:'#00e676', fontSize:'1.1rem', flexShrink:0}}>•</span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{margin:0}}
+                      placeholder={`Requirement ${idx + 1}...`}
+                      value={item}
+                      onChange={(e) => {
+                        const updated = [...requirements];
+                        updated[idx] = e.target.value;
+                        setRequirements(updated);
+                      }}
+                    />
+                    {requirements.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setRequirements(prev => prev.filter((_, i) => i !== idx))}
+                        style={{background:'rgba(255,77,77,0.15)', border:'1px solid rgba(255,77,77,0.3)', color:'#ff6b6b', borderRadius:'8px', padding:'6px 10px', cursor:'pointer', flexShrink:0}}
+                      >✕</button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setRequirements(prev => [...prev, ''])}
+                  style={{background:'rgba(0,230,118,0.1)', border:'1px dashed rgba(0,230,118,0.4)', color:'#00e676', borderRadius:'10px', padding:'0.5rem 1rem', cursor:'pointer', fontSize:'0.88rem', alignSelf:'flex-start', marginTop:'0.2rem'}}
+                >+ Add Requirement</button>
+              </div>
             </div>
 
             <div style={{display: 'flex', gap: '1.5rem'}}>
@@ -287,6 +375,29 @@ function CompanyDashboard() {
                   placeholder="e.g. 10LPA - 15LPA"
                   value={jobData.salary}
                   onChange={(e) => setJobData({ ...jobData, salary: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div style={{display: 'flex', gap: '1.5rem'}}>
+              <div className="form-group" style={{flex: 1}}>
+                <label>Eligible Branch</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. CSE, IT, ECE or ALL"
+                  value={jobData.eligibleBranch}
+                  onChange={(e) => setJobData({ ...jobData, eligibleBranch: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group" style={{flex: 1}}>
+                <label>Last Date to Apply</label>
+                <input
+                  type="date"
+                  className="form-control"
+                  value={jobData.lastDate}
+                  onChange={(e) => setJobData({ ...jobData, lastDate: e.target.value })}
                 />
               </div>
             </div>

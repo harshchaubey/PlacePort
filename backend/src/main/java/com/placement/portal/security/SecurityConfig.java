@@ -43,11 +43,12 @@ public class SecurityConfig {
                         .requestMatchers("/companies/pending").hasRole("ADMIN")
 
                         // company only
-                        // company only
                         .requestMatchers("/applications/job/**", "/applications/*/status").hasRole("COMPANY")
 
                         // student only
-                        .requestMatchers("/students/**").hasRole("STUDENT")
+                        .requestMatchers("/students/profile").permitAll()
+                        .requestMatchers("/students/**").hasAnyRole("STUDENT", "ADMIN")
+                        .requestMatchers("/companies").hasAnyRole("ADMIN", "COMPANY", "STUDENT")
                         .requestMatchers("/jobs/**").hasAnyRole("STUDENT", "COMPANY", "ADMIN")
                         .requestMatchers("/applications/apply/**", "/applications/my", "/applications/student/**").hasRole("STUDENT")
 

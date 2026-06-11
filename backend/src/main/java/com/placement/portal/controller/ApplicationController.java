@@ -36,7 +36,7 @@ public class ApplicationController {
         return applicationService.getApplicationByEmail(authentication.getName());
     }
 
-    /** Company updates the status of an application */
+    // Company updates the status of an application 
     @PatchMapping("/{applicationId}/status")
     public ResponseEntity<ApplicationResponseDTO> updateStatus(
             @PathVariable Long applicationId,

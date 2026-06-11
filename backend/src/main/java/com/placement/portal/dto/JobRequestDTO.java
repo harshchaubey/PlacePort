@@ -26,5 +26,7 @@ public class JobRequestDTO {
 
     private String salary;
     private List<String> skills;
+    private List<String> responsibilities;
+    private List<String> requirements;
 }
 
