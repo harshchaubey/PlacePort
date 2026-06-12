@@ -4,6 +4,7 @@ import { googleLogin, loginUser, getCurrentUser } from "../api/authApi";
 import { saveToken } from "../auth/auth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, GraduationCap } from "lucide-react";
+import toast from 'react-hot-toast';
 import "./landing.css";
 
 function LoginPage() {
@@ -36,14 +37,19 @@ function LoginPage() {
       const applyJobId = searchParams.get("applyJobId");
 
       if (needsProfile) {
+        toast.success("Login successful! Please complete your profile.");
         navigate("/complete-profile", { state: { role } });
       } else if (redirectPath) {
+        toast.success("Login successful!");
         navigate(`${redirectPath}${applyJobId ? `?applyJobId=${applyJobId}` : ''}`);
       } else if (role === "ADMIN") {
+        toast.success("Welcome back, Admin!");
         navigate("/admin");
       } else if (role === "COMPANY") {
+        toast.success("Welcome back!");
         navigate("/company");
       } else {
+        toast.success("Welcome back!");
         navigate("/");
       }
     } catch (err) {
@@ -51,7 +57,7 @@ function LoginPage() {
         setError("Account not found. Please sign up first.");
       } else {
         console.error("Google login error:", err);
-        setError(err?.response?.data?.message || "Google login failed");
+        toast.error(err?.response?.data?.message || "Google login failed");
       }
     } finally {
       setIsLoading(false);
@@ -99,12 +105,16 @@ function LoginPage() {
       const applyJobId = searchParams.get("applyJobId");
 
       if (redirectPath) {
+        toast.success("Login successful!");
         navigate(`${redirectPath}${applyJobId ? `?applyJobId=${applyJobId}` : ''}`);
       } else if (role === "ADMIN") {
+        toast.success("Welcome back, Admin!");
         navigate("/admin");
       } else if (role === "COMPANY") {
+        toast.success("Welcome back!");
         navigate("/company");
       } else {
+        toast.success("Welcome back!");
         navigate("/");
       }
     } catch (err) {
@@ -112,6 +122,7 @@ function LoginPage() {
       const serverMsg =
         err?.response?.data?.message || err?.message || "Login failed ❌";
       setError(serverMsg);
+      toast.error(serverMsg);
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +157,7 @@ function LoginPage() {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google Login Failed")}
+              onError={() => toast.error("Google Login Failed")}
               useOneTap
               theme="filled_blue"
               shape="pill"

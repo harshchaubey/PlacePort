@@ -4,6 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { registerUser, loginUser, googleLogin, getCurrentUser } from "../api/authApi";
 import { saveToken } from "../auth/auth";
 import { Mail, Lock, User, Briefcase, GraduationCap, ChevronDown, Eye, EyeOff, X } from "lucide-react";
+import toast from 'react-hot-toast';
 import "./landing.css";
 
 function RegisterPage() {
@@ -43,15 +44,17 @@ function RegisterPage() {
       }
 
       if (needsProfile) {
+        toast.success("Login successful! Please complete your profile.");
         navigate("/complete-profile", { state: { role } });
       } else {
+        toast.success("Login successful!");
         navigate("/");
       }
     } catch (err) {
       if (err?.response?.data?.message?.toLowerCase().includes("role is required")) {
         setShowRoleModal(true);
       } else {
-        setError(err?.response?.data?.message || "Google registration failed");
+        toast.error(err?.response?.data?.message || "Google registration failed");
       }
     } finally {
       setIsLoading(false);
@@ -76,7 +79,7 @@ function RegisterPage() {
 
       navigate("/complete-profile", { state: { role: selectedRole } });
     } catch (err) {
-      setError(err?.response?.data?.message || "Role selection failed");
+      toast.error(err?.response?.data?.message || "Role selection failed");
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +100,12 @@ function RegisterPage() {
         return;
     }
 
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!]).{5,}$/;
+    if (!passwordRegex.test(form.password)) {
+        setError("Password must be at least 5 characters long and contain at least one digit, one lowercase letter, one uppercase letter, and one special character.");
+        return;
+    }
+
     try {
       setIsLoading(true);
       await registerUser(form);
@@ -104,9 +113,10 @@ function RegisterPage() {
       const token = loginRes?.data?.token;
       if (token) saveToken(token);
       localStorage.setItem("userEmail", form.email);
+      toast.success("Registration successful!");
       navigate("/complete-profile", { state: { role: form.role } });
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || "Registration failed. Please try again.");
+      toast.error(err?.response?.data?.message || err?.message || "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +149,7 @@ function RegisterPage() {
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google Sign up Failed")}
+              onError={() => toast.error("Google Sign up Failed")}
               useOneTap
               theme="filled_blue"
               shape="pill"

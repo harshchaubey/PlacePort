@@ -10,10 +10,20 @@ import CompleteProfile from "./pages/ProfilePage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import JobsPage from "./pages/JobsPage";
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
-    <Routes>
-      {/* Public Route */}
+    <>
+      <Toaster position="top-right" toastOptions={{
+        style: {
+          background: '#1a1a2e',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.1)',
+        },
+      }} />
+      <Routes>
+        {/* Public Route */}
     <Route path="/jobs" element={<JobsPage />} />
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -47,11 +57,8 @@ function App() {
         }
       />
     </Routes>
-
-
+    </>
   );
-
-
 }
 
 export default App;

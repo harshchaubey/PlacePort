@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getAllJobs, applyJob, getAppliedJobs } from "../api/jobApi";
 import { GraduationCap, MapPin, ArrowRight, ArrowLeft, Search, Bookmark, CheckCircle } from "lucide-react";
+import toast from 'react-hot-toast';
 import "./landing.css";
 
 function JobsPage() {
@@ -11,6 +12,7 @@ function JobsPage() {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -32,13 +34,13 @@ function JobsPage() {
 
     // NOT LOGGED IN → redirect to login
     if (!token) {
-      alert("🔒 Please login first to apply for this position!");
+      toast.error("Please login first to apply for this position!");
       navigate(`/login?redirect=/jobs&applyJobId=${jobId}`);
       return;
     }
 
     if (appliedJobs.includes(jobId)) {
-      alert("You have already applied for this job.");
+      toast.error("You have already applied for this job.");
       return;
     }
 
@@ -46,10 +48,10 @@ function JobsPage() {
     try {
       await applyJob(jobId);
       setAppliedJobs(prev => [...prev, jobId]);
-      alert("Applied successfully ✅");
+      toast.success("Applied successfully!");
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || "Failed to apply.";
-      alert(`Error: ${msg}`);
+      toast.error(`Error: ${msg}`);
     }
   };
 
@@ -84,11 +86,16 @@ function JobsPage() {
   }, []);
 
   useEffect(() => {
+    setIsLoading(true);
     getAllJobs().then((res) => {
       const data = Array.isArray(res.data)
         ? res.data
         : res.data.data || res.data.jobs || [];
       setJobs([...data].reverse());
+      setIsLoading(false);
+    }).catch(() => {
+      setIsLoading(false);
+      toast.error("Failed to fetch jobs");
     });
   }, []);
 
@@ -183,7 +190,21 @@ function JobsPage() {
             </button>
           )}
         </div>
-        {filteredJobs.length === 0 ? (
+        {isLoading ? (
+          <div className="jobs-grid" style={{ padding: "0 5rem 5rem" }}>
+            {[1, 2, 3, 4, 5, 6].map((skel) => (
+              <div className="job-preview-card" key={skel} style={{ height: "100%" }}>
+                <div style={{ height: "24px", width: "70%", background: "rgba(255,255,255,0.05)", borderRadius: "4px", marginBottom: "1rem", animation: "pulse 1.5s infinite" }}></div>
+                <div style={{ height: "16px", width: "40%", background: "rgba(255,255,255,0.05)", borderRadius: "4px", marginBottom: "1.5rem", animation: "pulse 1.5s infinite" }}></div>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem" }}>
+                  <div style={{ height: "24px", width: "60px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", animation: "pulse 1.5s infinite" }}></div>
+                  <div style={{ height: "24px", width: "80px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", animation: "pulse 1.5s infinite" }}></div>
+                </div>
+                <div style={{ height: "30px", width: "100%", background: "rgba(255,255,255,0.05)", borderRadius: "8px", marginTop: "auto", animation: "pulse 1.5s infinite" }}></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredJobs.length === 0 ? (
           <div style={{ textAlign: "center", padding: "5rem", color: "var(--text-muted)", background: "var(--glass-bg)", margin: "0 5rem", borderRadius: "20px", border: "1px solid var(--glass-border)", backdropFilter: "blur(12px)" }}>
             <Search size={48} style={{ opacity: 0.5, marginBottom: "1rem" }} />
             <h3 style={{ color: "var(--text-main)", marginBottom: "0.5rem" }}>No jobs found</h3>

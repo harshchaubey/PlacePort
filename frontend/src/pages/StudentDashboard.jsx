@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../auth/auth";
 import { getStudentProfile, getMyNotifications, markNotificationAsRead } from "../api/authApi";
 import { applyJob } from "../api/jobApi";
+import toast from 'react-hot-toast';
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -34,6 +35,7 @@ function StudentDashboard() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef(null);
   const [selectedJob, setSelectedJob] = useState(null); // for View Details modal
+  const [isLoading, setIsLoading] = useState(true);
 
   const [notifications, setNotifications] = useState([]);
   const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
@@ -82,11 +84,11 @@ function StudentDashboard() {
         console.error("Warning: Could not refresh applications tab automatically.");
       }
 
-      alert("Applied successfully ✅");
+      toast.success("Applied successfully!");
 
     } catch (err) {
       console.error(err);
-      alert("Error applying ❌");
+      toast.error("Error applying");
     }
   };
 
@@ -134,6 +136,8 @@ function StudentDashboard() {
         setNotifications(notifRes.data || []);
       } catch (err) {
         console.error("Error loading notifications:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -405,33 +409,45 @@ function StudentDashboard() {
             </div>
 
             <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon" style={{color: '#4facfe', background: 'rgba(79, 172, 254, 0.1)'}}>
-                  <Briefcase strokeWidth={2.5} />
+              {isLoading ? [1, 2, 3].map(i => (
+                <div key={i} className="stat-card" style={{height: '100px', display: 'flex', alignItems: 'center'}}>
+                  <div style={{width: '50px', height: '50px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.5s infinite'}} />
+                  <div style={{marginLeft: '15px', flex: 1}}>
+                    <div style={{height: '24px', width: '40%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s infinite'}} />
+                    <div style={{height: '14px', width: '70%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite'}} />
+                  </div>
                 </div>
-                <div className="stat-info">
-                  <h3>{jobs.length}</h3>
-                  <p>Available Jobs</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon" style={{color: '#00e676', background: 'rgba(0, 230, 118, 0.1)'}}>
-                  <FileCheck strokeWidth={2.5} />
-                </div>
-                <div className="stat-info">
-                  <h3>{appliedJobs.length}</h3>
-                  <p>Applied Jobs</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon" style={{color: '#ffb20d', background: 'rgba(255, 178, 13, 0.1)'}}>
-                  <GraduationCap strokeWidth={2.5} />
-                </div>
-                <div className="stat-info">
-                  <h3>{profile?.cgpa || 0}</h3>
-                  <p>Current CGPA</p>
-                </div>
-              </div>
+              )) : (
+                <>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{color: '#4facfe', background: 'rgba(79, 172, 254, 0.1)'}}>
+                      <Briefcase strokeWidth={2.5} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{jobs.length}</h3>
+                      <p>Available Jobs</p>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{color: '#00e676', background: 'rgba(0, 230, 118, 0.1)'}}>
+                      <FileCheck strokeWidth={2.5} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{appliedJobs.length}</h3>
+                      <p>Applied Jobs</p>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-icon" style={{color: '#ffb20d', background: 'rgba(255, 178, 13, 0.1)'}}>
+                      <GraduationCap strokeWidth={2.5} />
+                    </div>
+                    <div className="stat-info">
+                      <h3>{profile?.cgpa || 0}</h3>
+                      <p>Current CGPA</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* 🕒 RECENT ACTIVITY */}
@@ -440,7 +456,18 @@ function StudentDashboard() {
                 <FileCheck size={20} color="#4facfe" /> Recent Activity
               </h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                {applications.slice(0, 3).map(app => {
+                {isLoading ? [1, 2].map(i => (
+                  <div key={i} style={{background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                      <div style={{width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.5s infinite'}} />
+                      <div>
+                        <div style={{height: '16px', width: '120px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '6px', animation: 'pulse 1.5s infinite'}} />
+                        <div style={{height: '12px', width: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite'}} />
+                      </div>
+                    </div>
+                    <div style={{height: '24px', width: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', animation: 'pulse 1.5s infinite'}} />
+                  </div>
+                )) : applications.slice(0, 3).map(app => {
                   const status = app.status || 'APPLIED';
                   const isPositive = ['HIRED', 'SHORTLISTED', 'INTERVIEW'].includes(status);
                   return (
@@ -471,7 +498,7 @@ function StudentDashboard() {
                     </div>
                   );
                 })}
-                {applications.length === 0 && (
+                {!isLoading && applications.length === 0 && (
                    <p style={{color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem'}}>No recent activity yet.</p>
                 )}
               </div>
@@ -495,6 +522,24 @@ function StudentDashboard() {
                 <Search size={48} style={{opacity: 0.3, marginBottom: '1rem', color: '#4facfe'}} />
                 <h3>No jobs match &ldquo;{searchQuery}&rdquo;</h3>
                 <p style={{color: 'var(--text-muted)'}}>Try a different keyword or <button onClick={() => setSearchQuery('')} style={{background: 'none', border: 'none', color: '#4facfe', cursor: 'pointer', fontSize: 'inherit', textDecoration: 'underline'}}>clear search</button>.</p>
+              </div>
+            ) : isLoading ? (
+              <div className="jobs-grid-glass">
+                {[1, 2, 3, 4].map(i => (
+                  <div className="job-glass-card" key={i}>
+                    <div style={{height: '24px', width: '60%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '1rem', animation: 'pulse 1.5s infinite'}} />
+                    <div style={{height: '14px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '6px', animation: 'pulse 1.5s infinite'}} />
+                    <div style={{height: '14px', width: '80%', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '1.5rem', animation: 'pulse 1.5s infinite'}} />
+                    <div style={{display: 'flex', gap: '10px', marginBottom: '1.5rem'}}>
+                      <div style={{height: '24px', width: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite'}} />
+                      <div style={{height: '24px', width: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite'}} />
+                    </div>
+                    <div style={{display: 'flex', gap: '0.6rem'}}>
+                      <div style={{height: '36px', flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite'}} />
+                      <div style={{height: '36px', flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite'}} />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
             <div className="jobs-grid-glass">
@@ -702,7 +747,23 @@ function StudentDashboard() {
         {/* 🟡 APPLICATIONS */}
         {activeMenu === "Applications" && (
           <div className="animate__animated animate__fadeIn">
-            {applications.length === 0 ? (
+            {isLoading ? (
+              <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="job-glass-card" style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem'}}>
+                    <div>
+                      <div style={{height: '20px', width: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s infinite'}} />
+                      <div style={{height: '14px', width: '150px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s infinite'}} />
+                      <div style={{height: '12px', width: '100px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', animation: 'pulse 1.5s infinite'}} />
+                    </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '1.5rem'}}>
+                      <div style={{height: '30px', width: '80px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', animation: 'pulse 1.5s infinite'}} />
+                      <div style={{height: '36px', width: '100px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', animation: 'pulse 1.5s infinite'}} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : applications.length === 0 ? (
               <div style={{textAlign: 'center', padding: '5rem', background: 'var(--glass-bg)', borderRadius: '20px', border: '1px solid var(--glass-border)'}}>
                 <FileCheck size={48} style={{opacity: 0.3, marginBottom: '1rem', color: '#00e676'}} />
                 <h3>No applications yet</h3>
