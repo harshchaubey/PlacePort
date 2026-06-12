@@ -2,7 +2,7 @@
 
 ## 📌 Overview
 
-The **College Placement Portal** is a comprehensive platform designed to digitize and streamline the campus recruitment workflow. It connects three roles — **Students** and **Companies** — with a secure, role-based system where each user sees only what they need.
+The **College Placement Portal** is a comprehensive platform designed to digitize and streamline the campus recruitment workflow. It connects three roles — **Students**, **Companies** and **Admin** — with a secure, role-based system where each user sees only what they need.
 
 ---
 
@@ -23,6 +23,14 @@ The **College Placement Portal** is a comprehensive platform designed to digitiz
 - Post job openings with title, description, salary, eligible branch, min CGPA, and required skills
 - View all applications received for each job posting
 - **Update application status** (Shortlist / Reject / Select applicants)
+
+### 🛡️ Admin
+- Centralized Admin Dashboard (`/admin/dashboard`)
+- Secure login using email/password or **Google OAuth**
+- Oversee all user registrations
+- **Company Verification**: Review and approve/reject company accounts before they can post jobs
+- Maintain platform security and integrity by vetting recruiters
+
 ### 🌐 General
 - Interactive **Landing Page** with job listings and company showcase
 - Fully **Dockerized** for one-command deployment
@@ -136,6 +144,7 @@ The app supports two authentication strategies, both producing a JWT for subsequ
 |---|---|
 | `STUDENT` | Complete profile, search & apply to jobs, track application status |
 | `COMPANY` | Post jobs, view applicants, shortlist/reject/select candidates |
+| `ADMIN` | Verify company accounts, oversee platform operations, manage platform access |
 ---
 
 ## 📡 API Endpoints
@@ -170,6 +179,15 @@ The app supports two authentication strategies, both producing a JWT for subsequ
 |---|---|---|
 | POST | `/students/profile` | Create/update student profile |
 | GET | `/students/profile` | Get logged-in student's profile |
+
+### Companies — `/companies`
+| Method | Path | Description |
+|---|---|---|
+| POST | `/companies/profile` | Register company profile |
+| GET | `/companies` | Get all companies |
+| GET | `/companies/pending` | Get all pending unverified companies (Admin) |
+| PUT | `/companies/verify/{id}` | Verify a company account (Admin) |
+| GET | `/companies/me` | Get logged-in company profile |
 
 ---
 
